@@ -152,16 +152,3 @@ def product_delete(request, pk):
         return redirect('product-page')
     return render(request, 'products/delete.html', {'product': p})
 
-
-def about_page(request):
-    """Render the about us page"""
-    return render(request, 'products/about.html')
-
-
-def pricing_page(request):
-    """Render the pricing page"""
-    return render(request, 'products/pricing.html')
-
-def home_page(request):
-    """Render the home page"""
-    return render(request, 'home.html')

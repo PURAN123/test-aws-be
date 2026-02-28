@@ -11,11 +11,9 @@ urlpatterns = [
     path('api/', include(router.urls)),
     
     # HTML views
+    path('', views.product_page, name='product-page'),
     path('add/', views.product_add, name='product-add'),
-    path('edit/<int:pk>/', views.product_edit, name='product-edit'),
-    path('delete/<int:pk>/', views.product_delete, name='product-delete'),
-    path('about/', views.about_page, name='about-page'),
-    path('products/', views.product_page, name='product-page'),
-    path('pricing/', views.pricing_page, name='pricing-page'),
-    path('', views.home_page, name='home-page'),
+    path('<int:pk>/', views.product_edit, name='product-edit'),
+    path('<int:pk>/delete/', views.product_delete, name='product-delete'),
+
 ]

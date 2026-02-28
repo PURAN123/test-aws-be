@@ -55,8 +55,8 @@
                 <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ p.description }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ p.created_at|date:"M d, Y" }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <a href="edit/{{ p.id }}/" class="text-blue-600 hover:text-blue-900 mr-4">Edit</a>
-                  <a href="delete/{{ p.id }}/" class="text-red-600 hover:text-red-900">Delete</a>
+                  <a href="{{ p.id }}/" class="text-blue-600 hover:text-blue-900 mr-4">Edit</a>
+                  <a href="{{ p.id }}/delete/" class="text-red-600 hover:text-red-900">Delete</a>
                 </td>
               </tr>
               {% empty %}
@@ -82,8 +82,8 @@
             <p class="text-sm text-gray-600 mb-3">{{ p.description }}</p>
             <p class="text-xs text-gray-400 mb-4">Created: {{ p.created_at|date:"M d, Y" }}</p>
             <div class="flex gap-3">
-              <a href="edit/{{ p.id }}/" class="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">Edit</a>
-              <a href="delete/{{ p.id }}/" class="flex-1 text-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Delete</a>
+              <a href="{{ p.id }}/" class="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">Edit</a>
+              <a href="{{ p.id }}/delete/" class="flex-1 text-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Delete</a>
             </div>
           </div>
           {% empty %}
