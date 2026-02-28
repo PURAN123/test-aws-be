@@ -26,21 +26,21 @@ jobs:
         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST "bash -s" <<'REMOTE'
         set -e
 
-        # ←––––– change this to the folder that contains manage.py and .git –––––→
-        cd ${{ secrets.EC2_APP_DIR }}
+        REPO_DIR=~/test-aws-be/test-aws-be
+        mkdir -p "$REPO_DIR"
+        cd "$REPO_DIR"
 
-        # if the directory wasn’t a git repo yet, clone it first
         if [ ! -d .git ]; then
-          git clone https://github.com/PURAN123/test-aws-be.git
+          cd ..
+          rm -rf test-aws-be
+          git clone https://github.com/PURAN123/test-aws-be.git test-aws-be
+          cd test-aws-be
         else
           git fetch origin main
           git reset --hard origin/main
         fi
 
-        # activate the virtualenv before running any Python commands
         source env/bin/activate
-
-        cd test-aws-be
 
         echo "📥 installing requirements"
         pip install -r requirements.txt --quiet
@@ -61,6 +61,7 @@ jobs:
     - name: Deployment status
       if: success()
       run: echo "✅ deployed to EC2"
-    - name: Deployment status
+
+    - name: Deployment failed
       if: failure()
       run: echo "❌ deployment failed – check logs above"
