@@ -49,6 +49,7 @@ jobs:
         python manage.py migrate --noinput
 
         echo "📁 collecting static files"
+        mkdir -p staticfiles
         python manage.py collectstatic --noinput || true
 
         echo "🔄 restarting service"
