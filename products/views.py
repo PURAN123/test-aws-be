@@ -1,69 +1,72 @@
-import json
-from django.http import JsonResponse, HttpResponseNotAllowed, HttpResponseBadRequest, Http404
-from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator, EmptyPage
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404
+from django.core.paginator import Paginator, EmptyPage
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Product
+from .serializers import ProductSerializer
 
 
-def serialize_product(p: Product) -> dict:
-    return {
-        'id': p.id,
-        'name': p.name,
-        'price': str(p.price),
-        'description': p.description,
-        'is_delete': p.is_delete,
-        'created_at': p.created_at.isoformat(),
-        'updated_at': p.updated_at.isoformat(),
-    }
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
-@csrf_exempt
-def product_list(request):
-    if request.method == 'GET':
-        page = request.GET.get('page', '1')
-        page_size = request.GET.get('page_size', '10')
-        try:
-            page = int(page)
-            page_size = int(page_size)
-        except ValueError:
-            return HttpResponseBadRequest('Invalid pagination parameters')
+class ProductViewSet(viewsets.ModelViewSet):
+    """
+    API ViewSet for Product CRUD operations.
+    Only returns non-deleted products.
+    DELETE performs soft delete (sets is_delete=True).
+    """
+    serializer_class = ProductSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [OrderingFilter, SearchFilter]
+    search_fields = ['name', 'description']
+    ordering_fields = ['id', 'name', 'price', 'created_at']
+    ordering = ['-created_at']
 
-        qs = Product.objects.filter(is_delete=False).order_by('-created_at')
-        paginator = Paginator(qs, page_size)
-        try:
-            page_obj = paginator.page(page)
-        except EmptyPage:
-            return JsonResponse({'products': [], 'page': page, 'page_size': page_size, 'total_pages': paginator.num_pages, 'total_items': paginator.count})
+    def get_queryset(self):
+        """Return only non-deleted products"""
+        return Product.objects.filter(is_delete=False)
 
-        products = [serialize_product(p) for p in page_obj.object_list]
-        return JsonResponse({
-            'products': products,
-            'page': page,
-            'page_size': page_size,
-            'total_pages': paginator.num_pages,
-            'total_items': paginator.count,
-        })
-    elif request.method == 'POST':
-        try:
-            data = json.loads(request.body.decode() or '{}')
-        except json.JSONDecodeError:
-            return HttpResponseBadRequest('Invalid JSON')
-        name = data.get('name')
-        price = data.get('price')
-        description = data.get('description', '')
-        if name is None or price is None:
-            return HttpResponseBadRequest('`name` and `price` are required')
-        try:
-            p = Product.objects.create(name=name, price=price, description=description)
-        except Exception as e:
-            return HttpResponseBadRequest(str(e))
-        return JsonResponse(serialize_product(p), status=201)
-    else:
-        return HttpResponseNotAllowed(['GET', 'POST'])
+    def perform_destroy(self, instance):
+        """Soft delete: set is_delete=True instead of actually deleting"""
+        instance.is_delete = True
+        instance.save()
+
+    @action(detail=False, methods=['get'])
+    def deleted(self, request):
+        """Endpoint to view deleted (soft-deleted) products"""
+        deleted_products = Product.objects.filter(is_delete=True)
+        page = self.paginate_queryset(deleted_products)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(deleted_products, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        """Restore a soft-deleted product"""
+        product = get_object_or_404(Product, pk=pk)
+        if not product.is_delete:
+            return Response(
+                {'detail': 'Product is not deleted.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        product.is_delete = False
+        product.save()
+        serializer = self.get_serializer(product)
+        return Response(serializer.data)
 
 
+# HTML Views (Server-rendered pages - unchanged)
 def product_page(request):
     # Server-rendered page showing non-deleted products with pagination and sorting
     page = request.GET.get('page', '1')
@@ -148,37 +151,3 @@ def product_delete(request, pk):
         p.save()
         return redirect('product-page')
     return render(request, 'products/delete.html', {'product': p})
-
-
-@csrf_exempt
-def product_detail(request, pk):
-    try:
-        p = Product.objects.get(pk=pk)
-    except Product.DoesNotExist:
-        raise Http404('Product not found')
-    if request.method == 'GET':
-        if p.is_delete:
-            raise Http404('Product not found')
-        return JsonResponse(serialize_product(p))
-    elif request.method in ('PUT', 'PATCH'):
-        try:
-            data = json.loads(request.body.decode() or '{}')
-        except json.JSONDecodeError:
-            return HttpResponseBadRequest('Invalid JSON')
-        name = data.get('name')
-        price = data.get('price')
-        description = data.get('description')
-        if name is not None:
-            p.name = name
-        if price is not None:
-            p.price = price
-        if description is not None:
-            p.description = description
-        p.save()
-        return JsonResponse(serialize_product(p))
-    elif request.method == 'DELETE':
-        p.is_delete = True
-        p.save()
-        return JsonResponse({'status': 'deleted'})
-    else:
-        return HttpResponseNotAllowed(['GET', 'PUT', 'PATCH', 'DELETE'])
