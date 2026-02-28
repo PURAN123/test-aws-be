@@ -2,18 +2,16 @@ name: Deploy to EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
-    - name: Setup SSH Key
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup SSH key
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -25,41 +23,43 @@ jobs:
         USER: ${{ secrets.EC2_USER }}
         HOST: ${{ secrets.EC2_HOST }}
       run: |
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST "bash -s" << 'REMOTE_SCRIPT'
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST "bash -s" <<'REMOTE'
         set -e
-        
-        # Pull latest code from main branch
-        echo "🔄 Pulling latest code from GitHub..."
-        git fetch origin main
-        git reset --hard origin/main
-        
-        # Activate virtual environment
-        echo "📦 Activating virtual environment..."
+
+        # ←––––– change this to the folder that contains manage.py and .git –––––→
+        cd ${{ secrets.EC2_APP_DIR }}
+
+        # if the directory wasn’t a git repo yet, clone it first
+        if [ ! -d .git ]; then
+          git clone https://github.com/PURAN123/test-aws-be.git .
+        else
+          git fetch origin main
+          git reset --hard origin/main
+        fi
+
+        # activate the virtualenv before running any Python commands
         source venv/bin/activate
-        
-        # Install/update dependencies
-        echo "📥 Installing dependencies..."
+
+        cd test-aws-be
+
+        echo "📥 installing requirements"
         pip install -r requirements.txt --quiet
-        
-        # Run database migrations
-        echo "🗄️  Running database migrations..."
+
+        echo "🗄️  running migrations"
         python manage.py migrate --noinput
-        
-        # Collect static files
-        echo "📁 Collecting static files..."
+
+        echo "📁 collecting static files"
         python manage.py collectstatic --noinput || true
-        
-        # Restart the application service
-        echo "🔄 Restarting application service..."
-        sudo systemctl restart gunicorn || sudo systemctl restart mydjango || echo "Manual restart may be needed"
-        
-        echo "✅ Deployment completed successfully!"
-        REMOTE_SCRIPT
 
-    - name: Deployment Status
+        echo "🔄 restarting service"
+        sudo systemctl restart gunicorn || sudo systemctl restart mydjango || true
+
+        echo "✅ deployment finished"
+        REMOTE
+
+    - name: Deployment status
       if: success()
-      run: echo "✅ Successfully deployed to EC2"
-
-    - name: Deployment Failed
+      run: echo "✅ deployed to EC2"
+    - name: Deployment status
       if: failure()
-      run: echo "❌ Deployment failed - check logs above"
+      run: echo "❌ deployment failed – check logs above"
