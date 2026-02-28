@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Products{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <!-- Header/Navigation -->
+    <nav class="bg-white shadow">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center">
+            <h1 class="text-2xl font-bold text-gray-900">MyStore</h1>
+          </div>
+          <div class="hidden md:flex space-x-8">
+            <a href="/" class="text-gray-700 hover:text-blue-600 transition font-medium">
+              Products
+            </a>
+            <a href="/about" class="text-gray-700 hover:text-blue-600 transition font-medium">
+              About Us
+            </a>
+          </div>
+          <!-- Mobile menu button -->
+          <div class="md:hidden">
+            <button class="text-gray-700 hover:text-blue-600" id="mobile-menu-btn">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Mobile menu -->
+      <div class="hidden md:hidden bg-white border-t border-gray-200" id="mobile-menu">
+        <div class="px-2 pt-2 pb-3 space-y-1">
+          <a href="/" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition">
+            Products
+          </a>
+          <a href="/about" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition">
+            About Us
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="min-h-screen">
+      {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center">
+          <p>&copy; 2026 MyStore. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Mobile menu toggle
+      document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+        const menu = document.getElementById('mobile-menu');
+        menu.classList.toggle('hidden');
+      });
+    </script>
+  </body>
+</html>

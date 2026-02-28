@@ -151,3 +151,8 @@ def product_delete(request, pk):
         p.save()
         return redirect('product-page')
     return render(request, 'products/delete.html', {'product': p})
+
+
+def about_page(request):
+    """Render the about us page"""
+    return render(request, 'products/about.html')
