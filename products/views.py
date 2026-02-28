@@ -161,3 +161,7 @@ def about_page(request):
 def pricing_page(request):
     """Render the pricing page"""
     return render(request, 'products/pricing.html')
+
+def home_page(request):
+    """Render the home page"""
+    return render(request, 'home.html')
