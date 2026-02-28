@@ -30,23 +30,12 @@ jobs:
         mkdir -p "$REPO_DIR"
         cd "$REPO_DIR"
 
-        if [ ! -d .git ]; then
-          cd ..
-          rm -rf test-aws-be
-          git clone https://github.com/PURAN123/test-aws-be.git test-aws-be
-          cd test-aws-be
-        else
-          git fetch origin main
-          git reset --hard origin/main
-        fi
+        cd ~/test-aws-be/test-aws-be
+        git pull origin main
 
         # Create virtualenv if it doesn't exist
-        if [ ! -d env ]; then
-          echo "📦 creating virtual environment"
-          python3 -m venv env
-        fi
-
-        source env/bin/activate
+        python3 -m venv /var/www/test-aws-be/venv
+        source /var/www/test-aws-be/venv/bin/activate
 
         echo "📥 installing requirements"
         pip install -r requirements.txt --quiet
