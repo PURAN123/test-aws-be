@@ -80,6 +80,8 @@ jobs:
         if [ -f deploy/nginx.conf ]; then
           sudo cp deploy/nginx.conf /etc/nginx/sites-available/mystore || true
           sudo ln -sf /etc/nginx/sites-available/mystore /etc/nginx/sites-enabled/mystore || true
+          # disable default site
+          sudo rm -f /etc/nginx/sites-enabled/default || true
           sudo nginx -t || true
           sudo systemctl reload nginx || true
         fi
