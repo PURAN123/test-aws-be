@@ -31,7 +31,7 @@ jobs:
 
         # if the directory wasn’t a git repo yet, clone it first
         if [ ! -d .git ]; then
-          git clone https://github.com/PURAN123/test-aws-be.git .
+          git clone https://github.com/PURAN123/test-aws-be.git
         else
           git fetch origin main
           git reset --hard origin/main
