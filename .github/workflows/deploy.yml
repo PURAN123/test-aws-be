@@ -73,6 +73,17 @@ jobs:
           sudo systemctl enable --now gunicorn || sudo systemctl start gunicorn || true
         fi
 
+        # install nginx, configure reverse proxy
+        echo "📡 installing nginx and configuring proxy"
+        sudo apt-get update -y
+        sudo apt-get install -y nginx || true
+        if [ -f deploy/nginx.conf ]; then
+          sudo cp deploy/nginx.conf /etc/nginx/sites-available/mystore || true
+          sudo ln -sf /etc/nginx/sites-available/mystore /etc/nginx/sites-enabled/mystore || true
+          sudo nginx -t || true
+          sudo systemctl reload nginx || true
+        fi
+
         # Gracefully reload gunicorn to avoid downtime; fall back to restart
         echo "🔄 reloading service gracefully"
         sudo systemctl reload gunicorn || sudo systemctl restart gunicorn || true
