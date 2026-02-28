@@ -28,6 +28,10 @@ jobs:
 
         REPO_DIR=/var/www/test-aws-be/test-aws-be
         VENV_DIR=/var/www/test-aws-be/venv
+        # ensure base directory exists and is owned by deploy user (USER is the SSH login user on EC2)
+        sudo mkdir -p /var/www/test-aws-be
+        # using -R so any existing files are also owned by the deploy user
+        sudo chown -R $USER:$USER /var/www/test-aws-be
         mkdir -p "$REPO_DIR"
         cd "$REPO_DIR"
 
