@@ -26,19 +26,34 @@ jobs:
         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST "bash -s" <<'REMOTE'
         set -e
 
-        REPO_DIR=~/test-aws-be/test-aws-be
+        REPO_DIR=/var/www/test-aws-be/test-aws-be
+        VENV_DIR=/var/www/test-aws-be/venv
         mkdir -p "$REPO_DIR"
         cd "$REPO_DIR"
 
-        cd ~/test-aws-be/test-aws-be
-        git pull origin main
+        if [ ! -d .git ]; then
+          cd ..
+          rm -rf test-aws-be
+          git clone https://github.com/PURAN123/test-aws-be.git test-aws-be
+          cd test-aws-be
+        else
+          git fetch origin main
+          git reset --hard origin/main
+        fi
 
-        # Create virtualenv if it doesn't exist
-        python3 -m venv /var/www/test-aws-be/venv
-        source /var/www/test-aws-be/venv/bin/activate
+        # Create virtualenv if it doesn't exist (first-time only)
+        if [ ! -d "$VENV_DIR" ]; then
+          echo "📦 creating virtual environment at $VENV_DIR"
+          mkdir -p "$(dirname "$VENV_DIR")"
+          python3 -m venv "$VENV_DIR"
+        fi
 
-        echo "📥 installing requirements"
-        pip install -r requirements.txt --quiet
+        # Activate venv
+        source "$VENV_DIR/bin/activate"
+
+        echo "📥 upgrading pip and installing requirements"
+        pip install --upgrade pip setuptools wheel --quiet
+        pip install -r requirements.txt --upgrade --quiet
 
         echo "🗄️  running migrations"
         python manage.py migrate --noinput
@@ -47,8 +62,16 @@ jobs:
         mkdir -p staticfiles
         python manage.py collectstatic --noinput || true
 
-        echo "🔄 restarting service"
-        sudo systemctl restart gunicorn || sudo systemctl restart mydjango || true
+        # Install or update systemd unit (if provided in repo) and reload daemon
+        if [ -f deploy/gunicorn.service ]; then
+          sudo cp deploy/gunicorn.service /etc/systemd/system/gunicorn.service || true
+          sudo systemctl daemon-reload || true
+          sudo systemctl enable --now gunicorn || sudo systemctl start gunicorn || true
+        fi
+
+        # Gracefully reload gunicorn to avoid downtime; fall back to restart
+        echo "🔄 reloading service gracefully"
+        sudo systemctl reload gunicorn || sudo systemctl restart gunicorn || true
 
         echo "✅ deployment finished"
         REMOTE

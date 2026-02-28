@@ -1,0 +1,16 @@
+[Unit]
+Description=gunicorn daemon for MyStore Django project
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/var/www/test-aws-be/test-aws-be
+Environment="PATH=/var/www/test-aws-be/venv/bin"
+ExecStart=/var/www/test-aws-be/venv/bin/gunicorn --config /var/www/test-aws-be/test-aws-be/config/gunicorn_config.py config.wsgi:application
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
