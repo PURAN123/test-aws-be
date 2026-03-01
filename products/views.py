@@ -119,9 +119,10 @@ def product_add(request):
         name = request.POST.get('name')
         price = request.POST.get('price')
         description = request.POST.get('description', '')
+        image = request.FILES.get('image')
         if not name or not price:
             return render(request, 'products/add.html', {'error': 'Name and price are required', 'name': name, 'price': price, 'description': description})
-        p = Product.objects.create(name=name, price=price, description=description)
+        p = Product.objects.create(name=name, price=price, description=description, image=image)
         return redirect('product-page')
     return render(request, 'products/add.html')
 
@@ -131,13 +132,19 @@ def product_edit(request, pk):
     if p.is_delete:
         raise Http404('Product not found')
     if request.method == 'POST':
+        print(request.FILES)
         name = request.POST.get('name')
         price = request.POST.get('price')
         description = request.POST.get('description', '')
+        image = request.FILES.get('image')
+        print('image', image)
+
         if name:
             p.name = name
         if price:
             p.price = price
+        if image:
+            p.image = image
         p.description = description
         p.save()
         return redirect('product-page')
