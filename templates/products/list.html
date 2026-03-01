@@ -2,111 +2,151 @@
 
 {% block title %}Products{% endblock %}
 
-
 {% block content %}
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-6 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-900">Product List</h2>
-          <a href="add/" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            <span class="mr-2">+</span> Add Product
-          </a>
+<div x-data="{ open: false, product: {} }" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <div class="mb-6 flex justify-between items-center">
+    <h2 class="text-lg font-semibold text-gray-900">Product List</h2>
+    <a href="add/" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+      <span class="mr-2">+</span> Add Product
+    </a>
+  </div>
+
+  <!-- Table -->
+  <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">ID</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Price</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Description</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Created</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-gray-200">
+        {% for p in page_obj.object_list %}
+        <tr 
+          class="hover:bg-gray-50 cursor-pointer"
+          @click="
+            product = {
+              id: '{{ p.id }}',
+              name: '{{ p.name|escapejs }}',
+              price: '{{ p.price }}',
+              description: '{{ p.description|escapejs }}',
+              created: '{{ p.created_at|date:"M d, Y" }}',
+              image: '{% if p.image %}{{ p.image.url }}{% else %}{% endif %}'
+            };
+            open = true
+          "
+        >
+          <td class="px-6 py-4 text-sm">{{ p.id }}</td>
+          <td class="px-6 py-4 text-sm font-medium">{{ p.name }}</td>
+          <td class="px-6 py-4 text-sm text-blue-600">${{ p.price }}</td>
+          <td class="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">{{ p.description }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ p.created_at|date:"M d, Y" }}</td>
+          <td class="px-6 py-4 text-sm">
+            <a href="{{ p.id }}/" @click.stop class="text-blue-600 mr-3 hover:underline">Edit</a>
+            <a href="{{ p.id }}/delete/" @click.stop class="text-red-600 hover:underline">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-6 py-8 text-center text-gray-500">No products found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="mt-8 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border rounded hover:bg-gray-50">Previous</a>
+    {% endif %}
+    <span class="px-3 py-2 bg-gray-100 rounded">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border rounded hover:bg-gray-50">Next</a>
+    {% endif %}
+  </div>
+
+  <!-- Overlay -->
+  <div 
+    x-show="open"
+    class="fixed inset-0 bg-black bg-opacity-40 z-40"
+    x-transition
+    @click="open = false"
+  ></div>
+
+  <!-- Drawer -->
+  <div
+    x-show="open"
+    class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 p-6 overflow-y-auto"
+    x-transition:enter="transform transition ease-in-out duration-300"
+    x-transition:enter-start="translate-x-full"
+    x-transition:enter-end="translate-x-0"
+    x-transition:leave="transform transition ease-in-out duration-300"
+    x-transition:leave-start="translate-x-0"
+    x-transition:leave-end="translate-x-full"
+  >
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold">Product Details</h2>
+      <button @click="open = false" class="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <p class="text-sm text-gray-500">ID</p>
+        <p class="font-medium" x-text="product.id"></p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Name</p>
+        <p class="font-medium" x-text="product.name"></p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Price</p>
+        <p class="font-medium text-blue-600">$<span x-text="product.price"></span></p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Description</p>
+        <p class="text-gray-700" x-text="product.description"></p>
+      </div>
+      <div x-show="product.image" class="mb-4">
+        <img 
+          :src="product.image" 
+          alt="Product Image"
+          class="w-full h-56 object-cover rounded-lg border"
+        >
+      </div>
+
+      <div x-show="!product.image" class="mb-4">
+        <div class="w-full h-56 flex items-center justify-center bg-gray-100 rounded-lg text-gray-400 text-sm">
+          No Image Available
         </div>
+      </div>
 
-        <!-- Responsive Table -->
-        <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition">
-                  <a href="{{ sort_urls.id }}" class="flex items-center gap-1">
-                    ID
-                    {% if sort_by == 'id' %}<span class="text-blue-600">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}
-                  </a>
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition">
-                  <a href="{{ sort_urls.name }}" class="flex items-center gap-1">
-                    Name
-                    {% if sort_by == 'name' %}<span class="text-blue-600">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}
-                  </a>
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition">
-                  <a href="{{ sort_urls.price }}" class="flex items-center gap-1">
-                    Price
-                    {% if sort_by == 'price' %}<span class="text-blue-600">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}
-                  </a>
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition">
-                  <a href="{{ sort_urls.created_at }}" class="flex items-center gap-1">
-                    Created
-                    {% if sort_by == 'created_at' %}<span class="text-blue-600">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}
-                  </a>
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              {% for p in page_obj.object_list %}
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ p.id }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ p.name }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ p.price }}</td>
-                <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ p.description }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ p.created_at|date:"M d, Y" }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <a href="{{ p.id }}/" class="text-blue-600 hover:text-blue-900 mr-4">Edit</a>
-                  <a href="{{ p.id }}/delete/" class="text-red-600 hover:text-red-900">Delete</a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">No products found.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+      <div>
+        <p class="text-sm text-gray-500">Created</p>
+        <p class="text-gray-700" x-text="product.created"></p>
+      </div>
 
-        <!-- Mobile Card View -->
-        <div class="md:hidden space-y-4">
-          {% for p in page_obj.object_list %}
-          <div class="bg-white rounded-lg shadow p-4">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <p class="text-sm font-medium text-gray-500">ID: {{ p.id }}</p>
-                <h3 class="text-lg font-semibold text-gray-900">{{ p.name }}</h3>
-              </div>
-              <p class="text-lg font-bold text-blue-600">${{ p.price }}</p>
-            </div>
-            <p class="text-sm text-gray-600 mb-3">{{ p.description }}</p>
-            <p class="text-xs text-gray-400 mb-4">Created: {{ p.created_at|date:"M d, Y" }}</p>
-            <div class="flex gap-3">
-              <a href="{{ p.id }}/" class="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">Edit</a>
-              <a href="{{ p.id }}/delete/" class="flex-1 text-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Delete</a>
-            </div>
-          </div>
-          {% empty %}
-          <div class="text-center text-gray-500 py-8">No products found.</div>
-          {% endfor %}
-        </div>
-
-        <!-- Pagination -->
-        <nav aria-label="pagination" class="mt-8 flex justify-center">
-          <div class="flex gap-2 flex-wrap justify-center">
-            {% if page_obj.has_previous %}
-              <a href="?page=1" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">First</a>
-              <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">Previous</a>
-            {% endif %}
-
-            <span class="px-3 py-2 bg-gray-100 rounded">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
-
-            {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">Next</a>
-              <a href="?page={{ paginator.num_pages }}" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50">Last</a>
-            {% endif %}
-          </div>
-        </nav>
+      <div class="pt-4 border-t space-y-3">
+        <a :href="product.id + '/'" class="block w-full text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+          Edit Product
+        </a>
+        <a :href="product.id + '/delete/'" class="block w-full text-center bg-red-600 text-white py-2 rounded hover:bg-red-700 transition">
+          Delete Product
+        </a>
       </div>
     </div>
+  </div>
+
+</div>
+
 {% endblock %}
