@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,7 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+
+    # Local apps
     'products',
+
+    # Third party apps
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -131,3 +137,23 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# media files settings for local image storage (not used in production with S3)
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
+
+
+
+
+AWS_ACCESS_KEY_ID = "AKIARXVIVX42GALHCAV3" #os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = "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" #os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = "saas-product" #"myproject-media-2026"
+AWS_S3_REGION_NAME = "eu-north-1" #"ap-south-1"  # change if different
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+AWS_S3_ADDRESSING_STYLE = "virtual"
+AWS_S3_OBJECT_PARAMETERS =  {
+    "CacheControl": "max-age=86400",
+}
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
