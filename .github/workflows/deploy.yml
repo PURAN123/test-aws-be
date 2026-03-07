@@ -45,7 +45,12 @@ jobs:
           git reset --hard origin/main
         fi
 
-        # Create virtualenv if it doesn't exist (first-time only)
+        # Install required python packages
+        echo "🐍 installing python dependencies"
+        sudo apt-get update -y
+        sudo apt-get install -y python3-venv python3-pip
+
+        # Create virtualenv if it doesn't exist
         if [ ! -d "$VENV_DIR" ]; then
           echo "📦 creating virtual environment at $VENV_DIR"
           mkdir -p "$(dirname "$VENV_DIR")"
