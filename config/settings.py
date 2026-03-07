@@ -45,6 +45,8 @@ INSTALLED_APPS = [
 
     # Local apps
     'products',
+    "image_converter",
+    "pdf_converter",
 
     # Third party apps
     'storages',

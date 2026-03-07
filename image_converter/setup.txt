@@ -1,0 +1,112 @@
+# Image Converter App — Setup Guide
+
+## 1. Install Dependency
+```bash
+pip install Pillow
+```
+(boto3 + django-storages already set up as per your setup)
+
+---
+
+## 2. Copy App into Your Project
+Place the `image_converter/` folder in your Django project root (same level as other apps).
+
+Place the template in your base `templates/` directory:
+```
+templates/
+└── image_converter/
+    └── index.html
+```
+
+---
+
+## 3. Register App — settings.py
+```python
+INSTALLED_APPS = [
+    ...
+    'image_converter',
+]
+```
+
+Make sure your templates setting points to your base templates folder:
+```python
+TEMPLATES = [
+    {
+        ...
+        'DIRS': [BASE_DIR / 'templates'],
+        ...
+    }
+]
+```
+
+---
+
+## 4. Wire URLs — project urls.py
+```python
+from django.urls import path, include
+
+urlpatterns = [
+    ...
+    path('converter/', include('image_converter.urls', namespace='image_converter')),
+]
+```
+
+---
+
+## 5. Run Migrations
+```bash
+python manage.py migrate
+```
+
+---
+
+## 6. S3 Storage (already configured)
+Your existing S3 / django-storages setup will automatically handle uploads.
+Files are saved to:
+- `conversions/original/YYYY/MM/DD/` — uploaded originals
+- `conversions/output/YYYY/MM/DD/`  — converted outputs
+
+---
+
+## 7. Access the App
+Visit: `http://your-domain/converter/`
+
+---
+
+## File Structure Created
+```
+image_converter/
+├── migrations/
+│   ├── __init__.py
+│   └── 0001_initial.py
+├── __init__.py
+├── admin.py        ← registered in Django admin
+├── apps.py
+├── forms.py        ← ImageUploadForm with validation
+├── models.py       ← ImageConversion model
+├── urls.py         ← 3 routes: index, convert, history
+├── utils.py        ← Pillow conversion + compression logic
+└── views.py        ← full POST handling, S3 save, DB record
+
+templates/
+└── image_converter/
+    └── index.html  ← Tailwind UI (upload, format picker, download)
+```
+
+---
+
+## DB Model Summary
+| Field | What it stores |
+|---|---|
+| `original_file` | S3 path of uploaded image |
+| `original_filename` | e.g. `photo.jpg` |
+| `original_format` | Detected format (JPEG, PNG…) |
+| `original_size_kb` | File size before anything |
+| `was_compressed` | Whether user agreed to compress |
+| `compressed_size_kb` | Size after compression (if done) |
+| `requested_format` | What user asked to convert to |
+| `converted_file` | S3 path of output |
+| `converted_size_kb` | Output file size |
+| `status` | pending / success / failed |
+| `ip_address` | For basic audit trail |
+| `created_at` | Timestamp |

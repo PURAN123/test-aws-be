@@ -1,0 +1,23 @@
+<!-- ─── RECENT CONVERSIONS ─── -->
+{% if recent_conversions %}
+<div class="mt-10">
+  <h2 class="font-display text-lg font-bold text-gray-800 mb-4">Recent Conversions</h2>
+  <div class="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+    {% for c in recent_conversions %}
+    <div class="px-6 py-4 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-800">{{ c.original_filename }}</p>
+        <p class="text-xs text-gray-400 mt-0.5">
+          {{ c.original_format }} → {{ c.requested_format }} ·
+          {{ c.original_size_kb }} KB → {{ c.converted_size_kb }} KB ·
+          {{ c.created_at|date:"d M Y, H:i" }}
+        </p>
+      </div>
+      {% if c.was_compressed %}
+      <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium">Compressed</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

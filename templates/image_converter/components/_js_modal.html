@@ -1,0 +1,328 @@
+<script>
+/* ═══════════════════════════════════════
+   OPERATIONS MODAL JS
+   Handles: open/close, tab switching,
+   crop canvas draw, all op submissions
+═══════════════════════════════════════ */
+
+let currentOp       = 'none';
+let currentRotation = 90;
+let currentFlip     = 'horizontal';
+
+// Crop state
+let cropImg       = null;   // HTMLImageElement drawn on canvas
+let cropCanvas    = null;
+let cropCtx       = null;
+let cropCanvasRect = null;  // canvas bounding rect in viewport
+let cropScaleX    = 1;      // ratio: real image px / canvas display px
+let cropScaleY    = 1;
+let isDragging    = false;
+let cropStart     = { x: 0, y: 0 };
+let cropBox       = null;   // { x, y, w, h } in canvas display coords
+
+/* ── Modal open / close ── */
+function openOpsModal() {
+  currentOp = 'none';
+  selectOp('none');
+  document.getElementById('modal-error').classList.add('hidden');
+  document.getElementById('ops-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeOpsModal() {
+  document.getElementById('ops-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpsModal(); });
+
+/* ── Tab selection ── */
+function selectOp(op) {
+  currentOp = op;
+  document.querySelectorAll('.op-tab').forEach(btn => {
+    const on = btn.dataset.op === op;
+    btn.classList.toggle('border-indigo-500', on);
+    btn.classList.toggle('bg-indigo-50',      on);
+    btn.classList.toggle('text-indigo-700',   on);
+    btn.classList.toggle('border-gray-200',  !on);
+    btn.classList.toggle('text-gray-500',    !on);
+  });
+  document.querySelectorAll('.op-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById(`panel-${op}`).classList.remove('hidden');
+
+  const labels = {
+    none: 'Download as-is', crop: 'Crop & Download',
+    resize: 'Resize & Download', rotate: 'Rotate & Download',
+    flip: 'Flip & Download', grayscale: 'Grayscale & Download',
+    compress: 'Compress & Download',
+  };
+  document.getElementById('modal-apply-label').textContent = labels[op] || 'Apply & Download';
+  document.getElementById('modal-error').classList.add('hidden');
+
+  if (op === 'crop') initCropCanvas();
+}
+
+/* ════════════════════════════════
+   CROP CANVAS
+════════════════════════════════ */
+function initCropCanvas() {
+  cropCanvas = document.getElementById('crop-canvas');
+  cropCtx    = cropCanvas.getContext('2d');
+  cropBox    = null;
+
+  const dataUrl = window._uploadedDataUrl;
+  if (!dataUrl) return;
+
+  cropImg = new Image();
+  cropImg.onload = () => {
+    // Fit inside max 560 × 400 display area
+    const maxW = Math.min(560, cropImg.naturalWidth);
+    const maxH = 400;
+    const ratio = Math.min(maxW / cropImg.naturalWidth, maxH / cropImg.naturalHeight);
+    cropCanvas.width  = Math.round(cropImg.naturalWidth  * ratio);
+    cropCanvas.height = Math.round(cropImg.naturalHeight * ratio);
+
+    // Scale factors: real px per canvas display px
+    cropScaleX = cropImg.naturalWidth  / cropCanvas.width;
+    cropScaleY = cropImg.naturalHeight / cropCanvas.height;
+
+    drawCropCanvas();
+    document.getElementById('crop-orig-dims').textContent =
+      `${cropImg.naturalWidth} × ${cropImg.naturalHeight} px`;
+    document.getElementById('crop-dims').textContent = '—';
+  };
+  cropImg.src = dataUrl;
+
+  // Events
+  cropCanvas.onmousedown  = cropMouseDown;
+  cropCanvas.onmousemove  = cropMouseMove;
+  cropCanvas.onmouseup    = cropMouseUp;
+  cropCanvas.ontouchstart = e => { e.preventDefault(); cropMouseDown(e.touches[0]); };
+  cropCanvas.ontouchmove  = e => { e.preventDefault(); cropMouseMove(e.touches[0]); };
+  cropCanvas.ontouchend   = e => { e.preventDefault(); cropMouseUp(e.changedTouches[0]); };
+}
+
+function getCanvasPos(e) {
+  const rect = cropCanvas.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(cropCanvas.width,  e.clientX - rect.left)),
+    y: Math.max(0, Math.min(cropCanvas.height, e.clientY - rect.top )),
+  };
+}
+
+function cropMouseDown(e) {
+  const pos = getCanvasPos(e);
+  cropStart = pos;
+  cropBox   = null;
+  isDragging = true;
+  hideCropOverlay();
+}
+function cropMouseMove(e) {
+  if (!isDragging) return;
+  const pos = getCanvasPos(e);
+  cropBox = normaliseBox(cropStart, pos);
+  drawCropCanvas();
+  updateCropOverlay();
+  updateCropDims();
+}
+function cropMouseUp(e) {
+  if (!isDragging) return;
+  isDragging = false;
+  const pos  = getCanvasPos(e);
+  cropBox = normaliseBox(cropStart, pos);
+  if (cropBox.w < 4 || cropBox.h < 4) { cropBox = null; hideCropOverlay(); }
+  drawCropCanvas();
+  updateCropOverlay();
+  updateCropDims();
+}
+
+function normaliseBox(a, b) {
+  return {
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    w: Math.abs(a.x - b.x),
+    h: Math.abs(a.y - b.y),
+  };
+}
+
+function drawCropCanvas() {
+  if (!cropCtx || !cropImg) return;
+  cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+  cropCtx.drawImage(cropImg, 0, 0, cropCanvas.width, cropCanvas.height);
+
+  if (cropBox && cropBox.w > 0) {
+    // Dim outside selection
+    cropCtx.fillStyle = 'rgba(0,0,0,0.45)';
+    cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+
+    // Clear selection area to show original
+    cropCtx.clearRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
+    cropCtx.drawImage(
+      cropImg,
+      cropBox.x * cropScaleX, cropBox.y * cropScaleY,
+      cropBox.w * cropScaleX, cropBox.h * cropScaleY,
+      cropBox.x, cropBox.y, cropBox.w, cropBox.h
+    );
+
+    // Draw border
+    cropCtx.strokeStyle = '#818cf8';
+    cropCtx.lineWidth   = 1.5;
+    cropCtx.setLineDash([]);
+    cropCtx.strokeRect(cropBox.x + 0.5, cropBox.y + 0.5, cropBox.w - 1, cropBox.h - 1);
+
+    // Draw rule-of-thirds grid inside selection
+    cropCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+    cropCtx.lineWidth   = 0.75;
+    for (let i = 1; i < 3; i++) {
+      const gx = cropBox.x + (cropBox.w / 3) * i;
+      const gy = cropBox.y + (cropBox.h / 3) * i;
+      cropCtx.beginPath(); cropCtx.moveTo(gx, cropBox.y); cropCtx.lineTo(gx, cropBox.y + cropBox.h); cropCtx.stroke();
+      cropCtx.beginPath(); cropCtx.moveTo(cropBox.x, gy); cropCtx.lineTo(cropBox.x + cropBox.w, gy); cropCtx.stroke();
+    }
+  }
+}
+
+function updateCropOverlay() {
+  // We use the canvas-drawn overlay (in drawCropCanvas), not the DOM overlay div
+  // The DOM overlay is hidden — pure canvas approach is cleaner
+  hideCropOverlay();
+}
+function hideCropOverlay() {
+  const el = document.getElementById('crop-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function updateCropDims() {
+  if (!cropBox || cropBox.w < 1) {
+    document.getElementById('crop-dims').textContent = '—';
+    return;
+  }
+  const rw = Math.round(cropBox.w * cropScaleX);
+  const rh = Math.round(cropBox.h * cropScaleY);
+  document.getElementById('crop-dims').textContent = `${rw} × ${rh} px`;
+}
+
+function resetCrop() {
+  cropBox = null;
+  if (cropCtx && cropImg) drawCropCanvas();
+  document.getElementById('crop-dims').textContent = '—';
+}
+
+/* ── Rotate buttons ── */
+function selectRotation(deg) {
+  currentRotation = deg;
+  document.querySelectorAll('.rot-btn').forEach(btn => {
+    const on = parseInt(btn.dataset.deg) === deg;
+    btn.classList.toggle('border-indigo-500', on);
+    btn.classList.toggle('bg-indigo-50',      on);
+    btn.classList.toggle('text-indigo-700',   on);
+    btn.classList.toggle('border-gray-200',  !on);
+    btn.classList.toggle('text-gray-600',    !on);
+  });
+}
+
+/* ── Flip buttons ── */
+function selectFlip(dir) {
+  currentFlip = dir;
+  const hBtn = document.getElementById('flip-h');
+  const vBtn = document.getElementById('flip-v');
+  const isH  = dir === 'horizontal';
+  hBtn.classList.toggle('border-indigo-500', isH);  hBtn.classList.toggle('bg-indigo-50', isH);  hBtn.classList.toggle('text-indigo-700', isH);
+  hBtn.classList.toggle('border-gray-200',  !isH);  hBtn.classList.toggle('text-gray-500', !isH);
+  vBtn.classList.toggle('border-indigo-500', !isH); vBtn.classList.toggle('bg-indigo-50', !isH); vBtn.classList.toggle('text-indigo-700', !isH);
+  vBtn.classList.toggle('border-gray-200',    isH); vBtn.classList.toggle('text-gray-500',  isH);
+}
+
+/* ── Apply & Download ── */
+async function applyAndDownload() {
+  if (!currentConversionId) return;
+
+  const btn = document.getElementById('modal-apply-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Processing…`;
+  document.getElementById('modal-error').classList.add('hidden');
+
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
+  fd.append('operation', currentOp);
+
+  // Validate + pack params per operation
+  if (currentOp === 'crop') {
+    if (!cropBox || cropBox.w < 4 || cropBox.h < 4) {
+      showModalError('Please drag to select a crop area on the image.');
+      resetModalBtn(); return;
+    }
+    // Send real pixel coords
+    fd.append('left',   Math.round(cropBox.x * cropScaleX));
+    fd.append('top',    Math.round(cropBox.y * cropScaleY));
+    fd.append('right',  Math.round((cropBox.x + cropBox.w) * cropScaleX));
+    fd.append('bottom', Math.round((cropBox.y + cropBox.h) * cropScaleY));
+
+  } else if (currentOp === 'resize') {
+    const w = document.getElementById('resize-w').value.trim();
+    const h = document.getElementById('resize-h').value.trim();
+    if (!w && !h) { showModalError('Please enter at least one dimension.'); resetModalBtn(); return; }
+    if (w) fd.append('width',  w);
+    if (h) fd.append('height', h);
+    fd.append('keep_ratio', document.getElementById('resize-ratio').checked ? 'true' : 'false');
+
+  } else if (currentOp === 'rotate') {
+    fd.append('degrees', currentRotation);
+
+  } else if (currentOp === 'flip') {
+    fd.append('direction', currentFlip);
+
+  } else if (currentOp === 'compress') {
+    fd.append('quality', document.getElementById('compress-quality').value);
+  }
+
+  try {
+    const processUrl = `{% url "image_converter:process" "00000000-0000-0000-0000-000000000000" %}`
+      .replace('00000000-0000-0000-0000-000000000000', currentConversionId);
+
+    const res = await fetch(processUrl, { method: 'POST', body: fd });
+
+    if (!res.ok) {
+      try { const err = await res.json(); showModalError(err.message || 'Operation failed.'); }
+      catch { showModalError('Operation failed. Please try again.'); }
+      resetModalBtn(); return;
+    }
+
+    const blob      = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a         = document.createElement('a');
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match       = disposition.match(/filename="?([^"]+)"?/);
+    a.download = match ? match[1] : currentConvertedFilename;
+    a.href     = objectUrl;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+    closeOpsModal();
+
+  } catch {
+    showModalError('Network error. Please try again.');
+  } finally {
+    resetModalBtn();
+  }
+}
+
+function showModalError(msg) {
+  document.getElementById('modal-error-msg').textContent = msg;
+  document.getElementById('modal-error').classList.remove('hidden');
+}
+function resetModalBtn() {
+  const btn = document.getElementById('modal-apply-btn');
+  btn.disabled = false;
+  const labels = {
+    none: 'Download as-is', crop: 'Crop & Download',
+    resize: 'Resize & Download', rotate: 'Rotate & Download',
+    flip: 'Flip & Download', grayscale: 'Grayscale & Download',
+    compress: 'Compress & Download',
+  };
+  btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> <span id="modal-apply-label">${labels[currentOp] || 'Apply & Download'}</span>`;
+}
+
+// Init defaults
+selectRotation(90);
+selectFlip('horizontal');
+</script>

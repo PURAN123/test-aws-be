@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Image Converter — ImageShift{% endblock %}
+
+{% block extra_styles %}
+.drop-zone { border: 2px dashed #d1d5db; transition: all 0.25s ease; }
+.drop-zone.dragover { border-color: #6366f1; background-color: #eef2ff; }
+.format-btn { transition: all 0.2s ease; }
+.format-btn.selected { background-color: #6366f1; color: white; border-color: #6366f1; }
+.format-btn.disabled-format { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.spinner {
+  border: 3px solid #e0e7ff; border-top: 3px solid #6366f1;
+  border-radius: 50%; width: 24px; height: 24px;
+  animation: spin 0.8s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.fade-in { animation: fadeIn 0.4s ease forwards; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.progress-bar-inner {
+  animation: progressAnim 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #6366f1, #a78bfa, #6366f1);
+  background-size: 200% 100%;
+}
+@keyframes progressAnim { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+{% endblock %}
+
+{% block content %}
+<main class="max-w-4xl mx-auto px-4 py-10">
+
+  <div class="mb-10 text-center">
+    <h1 class="font-display text-4xl font-extrabold text-gray-900 mb-2">Convert Any Image</h1>
+    <p class="text-gray-500 text-base">Upload · Choose Format · Download. Free, fast, and stored securely.</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    {% include "image_converter/components/_upload.html" %}
+    <div class="border-t border-gray-100 my-8"></div>
+    {% include "image_converter/components/_format_selector.html" %}
+    <div class="border-t border-gray-100 my-8"></div>
+    {% include "image_converter/components/_convert_action.html" %}
+  </div>
+
+  {% include "image_converter/components/_recent_conversions.html" %}
+
+</main>
+
+{% include "image_converter/components/_ops_modal.html" %}
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include "image_converter/components/_js_converter.html" %}
+  {% include "image_converter/components/_js_modal.html" %}
+{% endblock %}

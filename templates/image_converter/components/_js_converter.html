@@ -1,0 +1,150 @@
+<script>
+/* ═══════════════════════════════════════
+   CONVERTER — core state & upload logic
+═══════════════════════════════════════ */
+const CSRF_TOKEN = '{{ csrf_token }}';
+let selectedFile = null, selectedFormat = null, detectedFormat = null;
+let compressConfirmed = false, currentConversionId = null, currentConvertedFilename = null;
+
+const dropZone   = document.getElementById('drop-zone');
+const imageInput = document.getElementById('image-input');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+imageInput.addEventListener('change', () => { if (imageInput.files[0]) handleFile(imageInput.files[0]); });
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) { showError('Please upload a valid image file.'); return; }
+  selectedFile = file;
+  compressConfirmed = false;
+  hideSizeWarning(); hideError(); hideResult();
+
+  const mimeToFormat = {
+    'image/jpeg': 'JPEG', 'image/jpg': 'JPEG', 'image/png': 'PNG',
+    'image/webp': 'WEBP', 'image/gif': 'GIF',  'image/bmp': 'BMP', 'image/tiff': 'TIFF',
+  };
+  detectedFormat = mimeToFormat[file.type] || null;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('preview-img').src = e.target.result;
+    // Cache data URL for crop canvas
+    window._uploadedDataUrl = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('preview-name').textContent = file.name;
+  document.getElementById('preview-meta').textContent = `${detectedFormat || 'Unknown'} · ${(file.size / 1024).toFixed(0)} KB`;
+  document.getElementById('drop-placeholder').classList.add('hidden');
+  document.getElementById('file-preview').classList.remove('hidden');
+  document.getElementById('file-preview').classList.add('flex');
+
+  updateFormatButtons();
+  checkConvertReady();
+}
+
+function selectFormat(fmt) {
+  if (detectedFormat && fmt === detectedFormat) {
+    document.getElementById('same-format-warning').classList.remove('hidden');
+    document.getElementById('same-format-msg').textContent = `Image is already in ${fmt} format. Please choose a different format.`;
+    selectedFormat = null;
+    updateFormatButtons(); checkConvertReady();
+    return;
+  }
+  document.getElementById('same-format-warning').classList.add('hidden');
+  selectedFormat = fmt;
+  updateFormatButtons(); checkConvertReady();
+}
+
+function updateFormatButtons() {
+  document.querySelectorAll('.format-btn').forEach(btn => {
+    btn.classList.remove('selected', 'disabled-format');
+    if (btn.dataset.format === selectedFormat) btn.classList.add('selected');
+    if (detectedFormat && btn.dataset.format === detectedFormat) btn.classList.add('disabled-format');
+  });
+}
+
+function checkConvertReady() {
+  document.getElementById('convert-btn').disabled = !(selectedFile && selectedFormat);
+}
+
+async function startConversion() {
+  if (!selectedFile || !selectedFormat) return;
+  if (selectedFile.size > 5 * 1024 * 1024 && !compressConfirmed) {
+    document.getElementById('size-warning-msg').textContent =
+      `Your image is ${(selectedFile.size / (1024*1024)).toFixed(1)} MB which exceeds the 5 MB limit. Would you like to compress it before converting?`;
+    document.getElementById('size-warning').classList.remove('hidden');
+    return;
+  }
+  showProgress(); hideError(); hideResult();
+
+  const fd = new FormData();
+  fd.append('image', selectedFile);
+  fd.append('target_format', selectedFormat);
+  fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
+  if (compressConfirmed) fd.append('compress_confirmed', 'true');
+
+  try {
+    const res  = await fetch('{% url "image_converter:convert" %}', { method: 'POST', body: fd });
+    const data = await res.json();
+    hideProgress();
+    if (data.status === 'success') showResult(data);
+    else if (data.status === 'warning') showError(data.message, 'warning');
+    else if (data.status === 'size_exceeded') {
+      document.getElementById('size-warning-msg').textContent = data.message;
+      document.getElementById('size-warning').classList.remove('hidden');
+    } else showError(data.message || 'Something went wrong.');
+  } catch { hideProgress(); showError('Network error. Please try again.'); }
+}
+
+function confirmCompress() { compressConfirmed = true; hideSizeWarning(); startConversion(); }
+
+/* ── UI helpers ── */
+function showProgress() {
+  document.getElementById('progress-bar').classList.remove('hidden');
+  document.getElementById('convert-btn').disabled = true;
+}
+function hideProgress() {
+  document.getElementById('progress-bar').classList.add('hidden');
+  document.getElementById('convert-btn').disabled = false;
+}
+function showError(msg, type = 'error') {
+  const box = document.getElementById('error-box');
+  const el  = document.getElementById('error-msg');
+  box.classList.remove('hidden', 'bg-red-50', 'border-red-200', 'bg-amber-50', 'border-amber-200');
+  el.classList.remove('text-red-700', 'text-amber-700');
+  if (type === 'warning') { box.classList.add('bg-amber-50', 'border-amber-200'); el.classList.add('text-amber-700'); }
+  else                    { box.classList.add('bg-red-50',   'border-red-200');   el.classList.add('text-red-700');   }
+  el.textContent = msg;
+}
+function hideError()       { document.getElementById('error-box').classList.add('hidden'); }
+function hideSizeWarning() { document.getElementById('size-warning').classList.add('hidden'); }
+function showResult(data) {
+  document.getElementById('res-original').textContent  = `${data.original_filename} (${data.original_format})`;
+  document.getElementById('res-converted').textContent = `${data.converted_filename} (${data.converted_format})`;
+  document.getElementById('res-orig-size').textContent = data.original_size_kb;
+  document.getElementById('res-conv-size').textContent = data.converted_size_kb;
+  currentConversionId      = data.conversion_id;
+  currentConvertedFilename = data.converted_filename;
+  document.getElementById('result-box').classList.remove('hidden');
+}
+function hideResult() { document.getElementById('result-box').classList.add('hidden'); }
+
+function resetAll() {
+  selectedFile = null; selectedFormat = null; detectedFormat = null;
+  compressConfirmed = false; currentConversionId = null; currentConvertedFilename = null;
+  window._uploadedDataUrl = null;
+  document.getElementById('image-input').value = '';
+  document.getElementById('drop-placeholder').classList.remove('hidden');
+  document.getElementById('file-preview').classList.add('hidden');
+  document.getElementById('file-preview').classList.remove('flex');
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('selected', 'disabled-format'));
+  document.getElementById('same-format-warning').classList.add('hidden');
+  hideSizeWarning(); hideError(); hideResult(); checkConvertReady();
+}
+</script>

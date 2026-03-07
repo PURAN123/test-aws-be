@@ -1,0 +1,65 @@
+<!-- ─── STEP 3: CONVERT ─── -->
+<div>
+  <p class="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-3 font-display">Step 3 — Convert</p>
+  <button
+    id="convert-btn"
+    onclick="startConversion()"
+    class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-xl transition flex items-center gap-2"
+    disabled
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+    Convert Image
+  </button>
+</div>
+
+<!-- Progress -->
+<div id="progress-bar" class="hidden mt-6 fade-in">
+  <div class="flex items-center gap-3">
+    <div class="spinner"></div>
+    <span class="text-sm text-gray-500">Converting your image…</span>
+  </div>
+  <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+    <div class="progress-bar-inner h-full w-full rounded-full"></div>
+  </div>
+</div>
+
+<!-- Error -->
+<div id="error-box" class="hidden mt-6 rounded-xl p-4 fade-in border">
+  <p class="text-sm font-medium" id="error-msg"></p>
+</div>
+
+<!-- Result -->
+<div id="result-box" class="hidden mt-6 bg-green-50 border border-green-200 rounded-2xl p-6 fade-in">
+  <div class="flex items-start gap-4">
+    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+      <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <div class="flex-1">
+      <p class="font-semibold text-green-800 text-base">Conversion successful!</p>
+      <div class="mt-2 flex flex-wrap gap-4 text-sm text-green-700">
+        <span>📁 <span id="res-original"></span></span>
+        <span>→</span>
+        <span>✅ <span id="res-converted"></span></span>
+      </div>
+      <div class="mt-1 flex gap-6 text-xs text-green-600">
+        <span>Original: <span id="res-orig-size"></span> KB</span>
+        <span>Converted: <span id="res-conv-size"></span> KB</span>
+      </div>
+    </div>
+  </div>
+  <button
+    id="download-btn"
+    onclick="openOpsModal()"
+    class="mt-5 inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition cursor-pointer"
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+    </svg>
+    Download Image
+  </button>
+  <button onclick="resetAll()" class="mt-3 ml-3 text-sm text-green-700 underline hover:text-green-900">Convert another</button>
+</div>

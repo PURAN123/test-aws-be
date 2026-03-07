@@ -1,0 +1,22 @@
+<!-- ─── STEP 2: FORMAT SELECTOR ─── -->
+<div id="step-format">
+  <p class="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-3 font-display">Step 2 — Choose Output Format</p>
+  <div class="flex flex-wrap gap-3" id="format-buttons">
+    {% for value, label in form.target_format.field.choices %}
+      {% if value %}
+      <button
+        type="button"
+        class="format-btn border border-gray-200 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
+        data-format="{{ value }}"
+        onclick="selectFormat('{{ value }}')"
+      >{{ label }}</button>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div id="same-format-warning" class="hidden mt-3 text-amber-600 text-sm font-medium flex items-center gap-2 fade-in">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span id="same-format-msg"></span>
+  </div>
+</div>

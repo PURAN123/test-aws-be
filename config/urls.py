@@ -24,9 +24,10 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('products/', include('products.urls')),
+    path('converter/', include('image_converter.urls', namespace='image_converter')),
+    path('pdf/', include('pdf_converter.urls', namespace='pdf_converter')),
     path('', home_page, name='home-page'),
     path('about/', about_page, name='about-page'),
-    path('pricing/', pricing_page, name='pricing-page'),
 
     path('services/', services_page, name='services-page'),
 ]
