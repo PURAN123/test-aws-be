@@ -1,7 +1,10 @@
 <script>
-/* ═══════════════════════════════════════
-   CONVERTER — core state & upload logic
-═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   FORMAT CONVERTER  (/converter/)
+   Handles: upload, format selection, conversion POST,
+   direct download, and "Edit Image" handoff to /edit/.
+═══════════════════════════════════════════════════════ */
+
 const CSRF_TOKEN = '{{ csrf_token }}';
 let selectedFile = null, selectedFormat = null, detectedFormat = null;
 let compressConfirmed = false, currentConversionId = null, currentConvertedFilename = null;
@@ -9,15 +12,16 @@ let compressConfirmed = false, currentConversionId = null, currentConvertedFilen
 const dropZone   = document.getElementById('drop-zone');
 const imageInput = document.getElementById('image-input');
 
+/* ── Drag & drop ── */
 dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover'); });
 dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
+  e.preventDefault(); dropZone.classList.remove('dragover');
   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 imageInput.addEventListener('change', () => { if (imageInput.files[0]) handleFile(imageInput.files[0]); });
 
+/* ── File selected ── */
 function handleFile(file) {
   if (!file.type.startsWith('image/')) { showError('Please upload a valid image file.'); return; }
   selectedFile = file;
@@ -31,11 +35,7 @@ function handleFile(file) {
   detectedFormat = mimeToFormat[file.type] || null;
 
   const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('preview-img').src = e.target.result;
-    // Cache data URL for crop canvas
-    window._uploadedDataUrl = e.target.result;
-  };
+  reader.onload = e => { document.getElementById('preview-img').src = e.target.result; };
   reader.readAsDataURL(file);
 
   document.getElementById('preview-name').textContent = file.name;
@@ -48,6 +48,7 @@ function handleFile(file) {
   checkConvertReady();
 }
 
+/* ── Format buttons ── */
 function selectFormat(fmt) {
   if (detectedFormat && fmt === detectedFormat) {
     document.getElementById('same-format-warning').classList.remove('hidden');
@@ -73,11 +74,12 @@ function checkConvertReady() {
   document.getElementById('convert-btn').disabled = !(selectedFile && selectedFormat);
 }
 
+/* ── Convert ── */
 async function startConversion() {
   if (!selectedFile || !selectedFormat) return;
   if (selectedFile.size > 5 * 1024 * 1024 && !compressConfirmed) {
     document.getElementById('size-warning-msg').textContent =
-      `Your image is ${(selectedFile.size / (1024*1024)).toFixed(1)} MB which exceeds the 5 MB limit. Would you like to compress it before converting?`;
+      `Your image is ${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB which exceeds the 5 MB limit. Would you like to compress it before converting?`;
     document.getElementById('size-warning').classList.remove('hidden');
     return;
   }
@@ -93,8 +95,8 @@ async function startConversion() {
     const res  = await fetch('{% url "image_converter:convert" %}', { method: 'POST', body: fd });
     const data = await res.json();
     hideProgress();
-    if (data.status === 'success') showResult(data);
-    else if (data.status === 'warning') showError(data.message, 'warning');
+    if      (data.status === 'success')      showResult(data);
+    else if (data.status === 'warning')      showError(data.message, 'warning');
     else if (data.status === 'size_exceeded') {
       document.getElementById('size-warning-msg').textContent = data.message;
       document.getElementById('size-warning').classList.remove('hidden');
@@ -124,6 +126,7 @@ function showError(msg, type = 'error') {
 }
 function hideError()       { document.getElementById('error-box').classList.add('hidden'); }
 function hideSizeWarning() { document.getElementById('size-warning').classList.add('hidden'); }
+
 function showResult(data) {
   document.getElementById('res-original').textContent  = `${data.original_filename} (${data.original_format})`;
   document.getElementById('res-converted').textContent = `${data.converted_filename} (${data.converted_format})`;
@@ -135,10 +138,63 @@ function showResult(data) {
 }
 function hideResult() { document.getElementById('result-box').classList.add('hidden'); }
 
+/* ── Download (direct, no popup) ── */
+async function triggerDownload() {
+  if (!currentConversionId) return;
+  const btn = document.getElementById('download-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Downloading…`;
+  try {
+    const url = `{% url "image_converter:download" "00000000-0000-0000-0000-000000000000" %}`
+      .replace('00000000-0000-0000-0000-000000000000', currentConversionId);
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const obj  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = obj; a.download = currentConvertedFilename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(obj);
+  } catch { showError('Download failed. Please try again.'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download`;
+  }
+}
+
+/* ── Edit Image: fetch converted file → sessionStorage → redirect to /edit/ ── */
+async function openEditor() {
+  if (!currentConversionId) return;
+  const btn = document.getElementById('edit-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Opening Editor…`;
+  try {
+    const url = `{% url "image_converter:download" "00000000-0000-0000-0000-000000000000" %}`
+      .replace('00000000-0000-0000-0000-000000000000', currentConversionId);
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('Could not fetch the converted file.');
+    const blob   = await res.blob();
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        sessionStorage.setItem('editor_image_data', e.target.result);
+        sessionStorage.setItem('editor_image_name', currentConvertedFilename);
+      } catch { /* sessionStorage full — editor will show upload screen instead */ }
+      window.location.href = '{% url "image_converter:edit" %}?from=converter';
+    };
+    reader.readAsDataURL(blob);
+  } catch (err) {
+    showError(err.message || 'Could not open editor. Try downloading the image and uploading it manually.');
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Edit Image`;
+  }
+}
+
+/* ── Reset everything ── */
 function resetAll() {
   selectedFile = null; selectedFormat = null; detectedFormat = null;
   compressConfirmed = false; currentConversionId = null; currentConvertedFilename = null;
-  window._uploadedDataUrl = null;
   document.getElementById('image-input').value = '';
   document.getElementById('drop-placeholder').classList.remove('hidden');
   document.getElementById('file-preview').classList.add('hidden');

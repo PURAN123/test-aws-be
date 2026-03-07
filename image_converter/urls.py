@@ -12,4 +12,8 @@ urlpatterns = [
     # Standalone image editor
     path('edit/', views.edit_view, name='edit'),
     path('edit/apply/', views.edit_apply, name='edit_apply'),
+    # Image compressor
+    path('compress/', views.compress_view, name='compress'),
+    path('compress/run/', views.compress_image_view, name='compress_run'),
+    path('compress/download/<str:compression_id>/', views.compress_download, name='compress_download'),
 ]

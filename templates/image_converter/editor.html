@@ -4,81 +4,81 @@
 {% block title %}Image Editor — ImageShift{% endblock %}
 
 {% block extra_styles %}
-/* ── Layout ── */
 #editor-shell { display: none; }
-#editor-shell.visible { display: grid; }
 
-/* Canvas container */
+/* Checkerboard for transparency */
 #canvas-wrap {
   background: repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0 / 20px 20px;
-  position: relative;
+  min-height: 420px;
+  display: flex; align-items: center; justify-content: center;
 }
-
-/* Crop overlay — pure canvas, no DOM div needed */
-#main-canvas { cursor: default; display: block; max-width: 100%; max-height: 100%; }
+#main-canvas { display: block; max-width: 100%; cursor: default; }
 #main-canvas.crop-mode { cursor: crosshair; }
-
-/* Op buttons */
-.op-btn {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 4px; padding: 10px 6px; border-radius: 12px;
-  border: 2px solid #e5e7eb; color: #6b7280;
-  cursor: pointer; transition: all 0.15s; font-size: 11px; font-weight: 600;
-  background: white; min-width: 60px;
-}
-.op-btn:hover  { border-color: #a5b4fc; color: #6366f1; background: #eef2ff; }
-.op-btn.active { border-color: #6366f1; color: #6366f1; background: #eef2ff; }
-
-/* History chips */
-.history-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: #f3f4f6; border: 1px solid #e5e7eb;
-  border-radius: 999px; padding: 3px 10px 3px 8px;
-  font-size: 11px; font-weight: 500; color: #374151;
-}
-.history-chip button { color: #9ca3af; font-size: 13px; line-height: 1; padding: 0 2px; }
-.history-chip button:hover { color: #ef4444; }
-
-/* Panel inputs */
-.panel-input {
-  width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px;
-  padding: 7px 10px; font-size: 13px; outline: none; transition: border 0.15s;
-}
-.panel-input:focus { border-color: #6366f1; }
-
-/* Fade animation */
-.fade-up { animation: fadeUp 0.25s ease; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 
 /* Upload zone */
 #upload-zone {
-  border: 2.5px dashed #d1d5db; border-radius: 16px;
-  transition: all 0.2s;
+  border: 2.5px dashed #d1d5db; border-radius: 16px; transition: all 0.2s; cursor: pointer;
 }
 #upload-zone.dragover { border-color: #6366f1; background: #eef2ff; }
 
+/* Panel inputs */
+.px-input {
+  width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px;
+  padding: 6px 10px; font-size: 13px; outline: none; transition: border .15s;
+}
+.px-input:focus { border-color: #6366f1; }
+
+/* Toggle buttons (rotate/flip) */
+.tog-btn {
+  flex: 1; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: 12px; font-weight: 600; color: #6b7280; cursor: pointer;
+  transition: all .15s; text-align: center; background: white;
+}
+.tog-btn:hover { border-color: #a5b4fc; color: #6366f1; }
+.tog-btn.on { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
+
+/* On/off switch */
+.switch { position:relative; width:36px; height:20px; display:inline-block; flex-shrink:0; }
+.switch input { opacity:0; width:0; height:0; }
+.switch-track {
+  position:absolute; inset:0; border-radius:999px;
+  background:#d1d5db; transition:.2s; cursor:pointer;
+}
+.switch-track:before {
+  content:''; position:absolute; width:14px; height:14px;
+  left:3px; top:3px; background:white; border-radius:50%; transition:.2s;
+}
+input:checked + .switch-track { background:#6366f1; }
+input:checked + .switch-track:before { transform:translateX(16px); }
+
+/* Crop handle overlay */
 .spinner-sm {
-  width:18px; height:18px; border-radius:50%;
-  border: 2px solid #e0e7ff; border-top-color: #6366f1;
-  animation: spin 0.7s linear infinite; display:inline-block;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid #e0e7ff; border-top-color:#6366f1;
+  animation:spin .7s linear infinite; display:inline-block; vertical-align:middle;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
+.fade-in { animation: fadeIn .25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 {% endblock %}
 
 {% block content %}
-<main class="max-w-7xl mx-auto px-4 py-8">
-
-  <!-- Page header -->
-  <div class="mb-8 flex items-center justify-center flex-wrap gap-4 flex-col">
-      <h1 class="font-display text-5xl font-bold text-gray-900">Image Editor</h1>
-      <p class="text-gray-400 text-sm mt-1">Upload · Edit in real-time · Download</p>
+<main class="max-w-7xl mx-auto px-4 py-10">
+  
+  <div class="mb-10 text-center">
+    <div class="inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wider">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+      </svg>
+      Edit & enhance your images online
+    </div>
+    <h1 class="font-display text-5xl font-bold text-gray-900">Image Editor</h1>
+    <p class="text-gray-400 text-sm mt-0.5">All edits are live — download when ready</p>
   </div>
 
-  <!-- ══════════════════════════════════════
-       UPLOAD SCREEN
-  ══════════════════════════════════════ -->
+  <!-- UPLOAD SCREEN -->
   <div id="upload-screen">
-    <div id="upload-zone" class="bg-white p-16 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50">
+    <div id="upload-zone" class="bg-white p-16 text-center hover:border-indigo-400 hover:bg-indigo-50">
       <input type="file" id="file-input" accept="image/*" class="hidden"/>
       <label for="file-input" class="cursor-pointer block">
         <div class="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-5">
@@ -94,36 +94,26 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       EDITOR SHELL  (shown after upload)
-  ══════════════════════════════════════ -->
-  <div id="editor-shell" class="grid gap-5" style="grid-template-columns: 1fr 320px;">
+  <!-- EDITOR SHELL -->
+  <div id="editor-shell" style="display:none; grid-template-columns:1fr 296px; gap:18px;">
 
-    <!-- LEFT: Canvas + top bar -->
-    <div class="flex flex-col gap-4">
+    <!-- LEFT: canvas area -->
+    <div class="flex flex-col gap-3">
 
-      <!-- Top toolbar -->
+      <!-- Toolbar -->
       <div class="bg-white rounded-2xl border border-gray-100 px-5 py-3 flex items-center gap-3 flex-wrap">
-        <!-- File info -->
-        <div class="flex items-center gap-3 mr-auto">
-          <img id="thumb" class="w-9 h-9 rounded-lg object-cover border border-gray-200" src="" alt=""/>
-          <div>
-            <p id="file-name" class="text-sm font-semibold text-gray-800 leading-tight truncate max-w-xs"></p>
+        <div class="flex items-center gap-3 mr-auto min-w-0">
+          <img id="thumb" class="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" src="" alt=""/>
+          <div class="min-w-0">
+            <p id="file-name" class="text-sm font-semibold text-gray-800 truncate max-w-xs"></p>
             <p id="file-meta" class="text-xs text-gray-400"></p>
           </div>
         </div>
-        <!-- Actions -->
-        <button onclick="undoLast()"
-          class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-          </svg>Undo
-        </button>
-        <button onclick="resetEditor()"
+        <button onclick="resetAllEdits()"
           class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>Reset
+          </svg>Reset All
         </button>
         <button onclick="changeImage()"
           class="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition">
@@ -132,186 +122,161 @@
       </div>
 
       <!-- Canvas -->
-      <div id="canvas-wrap"
-        class="bg-white rounded-2xl border border-gray-100 flex items-center justify-center overflow-hidden"
-        style="min-height:420px; max-height:640px;">
+      <div id="canvas-wrap" class="rounded-2xl border border-gray-100 overflow-hidden">
         <canvas id="main-canvas"></canvas>
       </div>
 
-      <!-- Operations history chips -->
-      <div id="history-bar" class="hidden bg-white rounded-xl border border-gray-100 px-4 py-3">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Applied Operations</p>
-        <div id="history-chips" class="flex flex-wrap gap-2"></div>
+      <!-- Active edits summary -->
+      <div id="summary-bar" class="hidden bg-white rounded-xl border border-gray-100 px-4 py-3 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
       </div>
 
     </div>
 
-    <!-- RIGHT: Tools panel -->
-    <div class="flex flex-col gap-4">
+    <!-- RIGHT: all tool panels, always visible -->
+    <div class="flex flex-col gap-3" style="max-height:calc(100vh - 130px); overflow-y:auto; padding-right:2px;">
 
-      <!-- Op buttons grid -->
+      <!-- ══ CROP ══ -->
       <div class="bg-white rounded-2xl border border-gray-100 p-4">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Operations</p>
-        <div class="grid grid-cols-3 gap-2">
-
-          <button class="op-btn" data-op="crop" onclick="selectTool('crop')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 2v14a2 2 0 002 2h14M18 22V8a2 2 0 00-2-2H2"/>
-            </svg>Crop
-          </button>
-
-          <button class="op-btn" data-op="resize" onclick="selectTool('resize')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-            </svg>Resize
-          </button>
-
-          <button class="op-btn" data-op="rotate" onclick="selectTool('rotate')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>Rotate
-          </button>
-
-          <button class="op-btn" data-op="flip" onclick="selectTool('flip')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>Flip
-          </button>
-
-          <button class="op-btn" data-op="grayscale" onclick="applyGrayscale()">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-            </svg>Grayscale
-          </button>
-
-          <button class="op-btn" data-op="brightness" onclick="selectTool('brightness')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>Brightness
-          </button>
-
-        </div>
-      </div>
-
-      <!-- Tool panel (changes per tool) -->
-      <div id="tool-panel" class="hidden bg-white rounded-2xl border border-gray-100 p-4 fade-up">
-        <!-- Crop panel -->
-        <div id="panel-crop" class="tool-pane hidden">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Crop</p>
-          <p class="text-xs text-gray-400 mb-3">Drag on the image to select the region you want to keep.</p>
-          <div class="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-600 mb-3">
-            Selection: <span id="crop-info" class="font-semibold text-gray-800">none</span>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="applyCrop()"
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl transition">
-              Apply Crop
-            </button>
-            <button onclick="cancelTool()"
-              class="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-xl hover:bg-gray-50 transition">
-              Cancel
-            </button>
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">✂ Crop</p>
+          <div class="flex items-center gap-2">
+            <span id="crop-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">off</span>
+            <button onclick="clearCrop()" id="crop-clear-btn"
+              class="hidden text-xs text-red-500 hover:text-red-700 border border-red-200 px-2 py-0.5 rounded-lg transition">Clear</button>
           </div>
         </div>
-
-        <!-- Resize panel -->
-        <div id="panel-resize" class="tool-pane hidden">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Resize</p>
-          <div class="space-y-3">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Width (px)</label>
-                <input id="rz-w" type="number" min="1" max="10000" class="panel-input" placeholder="Width"
-                  oninput="previewResize()"/>
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Height (px)</label>
-                <input id="rz-h" type="number" min="1" max="10000" class="panel-input" placeholder="Height"
-                  oninput="previewResize()"/>
-              </div>
-            </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="rz-ratio" checked onchange="previewResize()" class="rounded text-indigo-600"/>
-              <span class="text-xs text-gray-600">Keep aspect ratio</span>
-            </label>
-            <div id="rz-preview-info" class="text-xs text-indigo-600 font-medium hidden"></div>
-          </div>
-          <div class="flex gap-2 mt-4">
-            <button onclick="applyResize()"
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl transition">
-              Apply Resize
-            </button>
-            <button onclick="cancelTool()" class="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-xl hover:bg-gray-50 transition">Cancel</button>
-          </div>
+        <p class="text-xs text-gray-400 mb-3">Drag on the image to select the crop region.</p>
+        <div id="crop-info-box" class="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500 mb-2">
+          Selection: <span id="crop-dims" class="font-semibold text-gray-700">none</span>
         </div>
-
-        <!-- Rotate panel -->
-        <div id="panel-rotate" class="tool-pane hidden">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Rotate</p>
-          <div class="grid grid-cols-3 gap-2 mb-3">
-            <button onclick="applyRotate(90)"  class="border border-gray-200 hover:border-indigo-400 hover:text-indigo-600 rounded-lg py-2 text-sm font-medium text-gray-600 transition">90°</button>
-            <button onclick="applyRotate(180)" class="border border-gray-200 hover:border-indigo-400 hover:text-indigo-600 rounded-lg py-2 text-sm font-medium text-gray-600 transition">180°</button>
-            <button onclick="applyRotate(270)" class="border border-gray-200 hover:border-indigo-400 hover:text-indigo-600 rounded-lg py-2 text-sm font-medium text-gray-600 transition">270°</button>
+        <!-- Manual inputs -->
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">X (left)</label>
+            <input id="crop-x" type="number" min="0" class="px-input" placeholder="0" oninput="cropFromInputs()"/>
           </div>
-          <button onclick="cancelTool()" class="w-full text-sm text-gray-400 hover:text-gray-600 py-1">Cancel</button>
-        </div>
-
-        <!-- Flip panel -->
-        <div id="panel-flip" class="tool-pane hidden">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Flip</p>
-          <div class="flex gap-2 mb-3">
-            <button onclick="applyFlip('horizontal')"
-              class="flex-1 border border-gray-200 hover:border-indigo-400 hover:text-indigo-600 rounded-xl py-3 text-sm font-semibold text-gray-600 flex items-center justify-center gap-2 transition">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4M4 17h12"/>
-              </svg>Horizontal
-            </button>
-            <button onclick="applyFlip('vertical')"
-              class="flex-1 border border-gray-200 hover:border-indigo-400 hover:text-indigo-600 rounded-xl py-3 text-sm font-semibold text-gray-600 flex items-center justify-center gap-2 transition">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
-              </svg>Vertical
-            </button>
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Y (top)</label>
+            <input id="crop-y" type="number" min="0" class="px-input" placeholder="0" oninput="cropFromInputs()"/>
           </div>
-          <button onclick="cancelTool()" class="w-full text-sm text-gray-400 hover:text-gray-600 py-1">Cancel</button>
-        </div>
-
-        <!-- Brightness panel -->
-        <div id="panel-brightness" class="tool-pane hidden">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Brightness / Contrast</p>
-          <div class="space-y-3">
-            <div>
-              <label class="text-xs text-gray-500 flex justify-between mb-1">
-                <span>Brightness</span><span id="bright-val" class="text-indigo-600 font-semibold">0</span>
-              </label>
-              <input type="range" id="bright-slider" min="-100" max="100" value="0"
-                oninput="previewBrightness()" class="w-full accent-indigo-600"/>
-            </div>
-            <div>
-              <label class="text-xs text-gray-500 flex justify-between mb-1">
-                <span>Contrast</span><span id="contrast-val" class="text-indigo-600 font-semibold">0</span>
-              </label>
-              <input type="range" id="contrast-slider" min="-100" max="100" value="0"
-                oninput="previewBrightness()" class="w-full accent-indigo-600"/>
-            </div>
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Width</label>
+            <input id="crop-w" type="number" min="1" class="px-input" placeholder="px" oninput="cropFromInputs()"/>
           </div>
-          <div class="flex gap-2 mt-4">
-            <button onclick="applyBrightness()"
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl transition">
-              Apply
-            </button>
-            <button onclick="cancelTool()" class="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-xl hover:bg-gray-50 transition">Cancel</button>
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Height</label>
+            <input id="crop-h" type="number" min="1" class="px-input" placeholder="px" oninput="cropFromInputs()"/>
           </div>
         </div>
       </div>
 
-      <!-- Download panel -->
+      <!-- ══ ROTATE ══ -->
       <div class="bg-white rounded-2xl border border-gray-100 p-4">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Download</p>
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">↻ Rotate</p>
+          <span id="rotate-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">0°</span>
+        </div>
+        <!-- Cumulative rotation: each click adds to total, clicking active removes -->
+        <div class="flex gap-2">
+          <button class="tog-btn" id="rot-90"  onclick="toggleRotate(90)">+90°</button>
+          <button class="tog-btn" id="rot-180" onclick="toggleRotate(180)">+180°</button>
+          <button class="tog-btn" id="rot-270" onclick="toggleRotate(270)">+270°</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Click again to remove. Total rotation: <span id="rot-total" class="font-semibold text-gray-600">0°</span></p>
+      </div>
+
+      <!-- ══ FLIP ══ -->
+      <div class="bg-white rounded-2xl border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">⇆ Flip</p>
+          <span id="flip-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">off</span>
+        </div>
+        <div class="flex gap-2">
+          <button class="tog-btn" id="flip-h-btn" onclick="toggleFlip('h')">
+            <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4M4 17h12"/>
+            </svg>Horizontal
+          </button>
+          <button class="tog-btn" id="flip-v-btn" onclick="toggleFlip('v')">
+            <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>Vertical
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Click active button again to turn off.</p>
+      </div>
+
+      <!-- ══ GRAYSCALE ══ -->
+      <div class="bg-white rounded-2xl border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">◑ Grayscale</p>
+          <label class="switch">
+            <input type="checkbox" id="gs-toggle" onchange="state.grayscale=this.checked; render()"/>
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Toggle on/off anytime. No extra settings needed.</p>
+      </div>
+
+      <!-- ══ BRIGHTNESS / CONTRAST ══ -->
+      <div class="bg-white rounded-2xl border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">☀ Brightness</p>
+          <button onclick="resetBrightness()" class="text-xs text-gray-400 hover:text-gray-700 transition">Reset</button>
+        </div>
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-500 block mb-1">Format</label>
-            <select id="dl-format" class="panel-input">
+            <label class="text-xs text-gray-500 flex justify-between mb-1">
+              Brightness <span id="bright-val" class="font-semibold text-indigo-600">0</span>
+            </label>
+            <input type="range" id="bright-sl" min="-100" max="100" value="0"
+              oninput="state.brightness=+this.value; document.getElementById('bright-val').textContent=this.value; render()"
+              class="w-full accent-indigo-600"/>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 flex justify-between mb-1">
+              Contrast <span id="contrast-val" class="font-semibold text-indigo-600">0</span>
+            </label>
+            <input type="range" id="contrast-sl" min="-100" max="100" value="0"
+              oninput="state.contrast=+this.value; document.getElementById('contrast-val').textContent=this.value; render()"
+              class="w-full accent-indigo-600"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ RESIZE ══ -->
+      <div class="bg-white rounded-2xl border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">⤡ Resize</p>
+          <button onclick="clearResize()" class="text-xs text-gray-400 hover:text-gray-700 transition">Clear</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Width (px)</label>
+            <input id="rz-w" type="number" min="1" max="10000" class="px-input" placeholder="original"
+              oninput="onResizeInput('w')"/>
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Height (px)</label>
+            <input id="rz-h" type="number" min="1" max="10000" class="px-input" placeholder="original"
+              oninput="onResizeInput('h')"/>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 mt-2 cursor-pointer">
+          <input type="checkbox" id="rz-lock" checked class="rounded text-indigo-600"
+            onchange="onResizeInput('w')"/>
+          <span class="text-xs text-gray-500">Lock aspect ratio</span>
+        </label>
+        <p id="rz-info" class="text-xs text-indigo-600 font-medium mt-1 hidden"></p>
+      </div>
+
+      <!-- ══ DOWNLOAD ══ -->
+      <div class="bg-white rounded-2xl border border-gray-100 p-4">
+        <p class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">↓ Download</p>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-400 block mb-1">Format</label>
+            <select id="dl-format" class="px-input">
               <option value="original">Original format</option>
               <option value="JPEG">JPEG</option>
               <option value="PNG">PNG</option>
@@ -319,120 +284,119 @@
             </select>
           </div>
           <div>
-            <label class="text-xs text-gray-500 flex justify-between mb-1">
-              <span>Quality</span><span id="dl-quality-val" class="text-indigo-600 font-semibold">90%</span>
+            <label class="text-xs text-gray-400 flex justify-between mb-1">
+              Quality <span id="dl-q-val" class="text-indigo-600 font-semibold">90%</span>
             </label>
             <input type="range" id="dl-quality" min="30" max="100" value="90"
-              oninput="document.getElementById('dl-quality-val').textContent = this.value + '%'"
+              oninput="document.getElementById('dl-q-val').textContent=this.value+'%'"
               class="w-full accent-indigo-600"/>
           </div>
-          <div id="dl-size-info" class="text-xs text-gray-400 hidden"></div>
         </div>
         <button id="dl-btn" onclick="downloadImage()"
           class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-          </svg>
-          Download Image
+          </svg>Download Image
         </button>
       </div>
 
-      <!-- Canvas info -->
-      <div class="bg-white rounded-2xl border border-gray-100 p-4">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Canvas Info</p>
-        <div class="space-y-1 text-xs text-gray-600">
-          <div class="flex justify-between"><span class="text-gray-400">Dimensions</span><span id="info-dims">—</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Operations</span><span id="info-ops">0</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Original</span><span id="info-orig">—</span></div>
-        </div>
-      </div>
-
-    </div>
+    </div><!-- /right panel -->
   </div><!-- /editor-shell -->
 
 </main>
 
-<!-- Error toast -->
-<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-xl z-50 fade-up"></div>
-
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-xl z-50"></div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
 /* ═══════════════════════════════════════════════════════════
-   IMAGE EDITOR — full real-time canvas editor
-   Architecture:
-   - `sourceImg`   : the original loaded HTMLImageElement (never mutated)
-   - `opStack[]`   : array of applied operations (crop/flip/rotate/grayscale/brightness)
-   - `renderCanvas()` : re-draws everything from sourceImg + opStack every time
-   - Canvas is for PREVIEW only; final download is server-side via /edit/apply/
+   LIVE IMAGE EDITOR
+   ─────────────────────────────────────────────────────────
+   Single `state` object holds ALL edit values at all times.
+   Every UI interaction updates state → calls render().
+   render() replays the full pipeline on every change.
+   Download sends original file + state to server (Pillow).
+
+   State shape:
+   {
+     crop:       { x, y, w, h } | null   — in real image px
+     rotate:     0 | 90 | 180 | 270      — cumulative degrees
+     flipH:      bool
+     flipV:      bool
+     grayscale:  bool
+     brightness: -100..100
+     contrast:   -100..100
+     resize:     { w, h } | null         — in real image px
+   }
 ═══════════════════════════════════════════════════════════ */
 
 const CSRF = '{{ csrf_token }}';
 
-// State
-let sourceImg     = null;   // original image element
-let sourceFile    = null;   // original File object
-let opStack       = [];     // [{type, params, label}]
-let activeTool    = null;   // currently selected tool panel
+let sourceImg  = null;   // original HTMLImageElement, never mutated
+let sourceFile = null;
 
-// Canvas
-const canvas = document.getElementById('main-canvas');
-const ctx    = canvas.getContext('2d');
+// ── The one source of truth ──
+let state = defaultState();
 
-// Crop drag state
-let isCropping   = false;
-let cropStart    = null;
-let cropCurrent  = null;
+function defaultState() {
+  return {
+    crop: null, rotate: 0,
+    flipH: false, flipV: false,
+    grayscale: false,
+    brightness: 0, contrast: 0,
+    resize: null,
+  };
+}
 
-// Current "working" image dimensions (changes as ops are applied)
-let workW = 0, workH = 0;
+// Real image dimensions AFTER crop (used for resize ratio)
+function croppedDims() {
+  if (!sourceImg) return { w: 0, h: 0 };
+  if (state.crop) return { w: state.crop.w, h: state.crop.h };
+  return { w: sourceImg.naturalWidth, h: sourceImg.naturalHeight };
+}
 
-/* ═══════════════════
+/* ══════════════════════════════════════
    UPLOAD
-═══════════════════ */
-const uploadZone  = document.getElementById('upload-zone');
-const fileInput   = document.getElementById('file-input');
+══════════════════════════════════════ */
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
 
 uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
 uploadZone.addEventListener('dragleave', e => { if (!uploadZone.contains(e.relatedTarget)) uploadZone.classList.remove('dragover'); });
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault(); uploadZone.classList.remove('dragover');
-  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-});
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
 
-function loadFile(file) {
-  if (!file.type.startsWith('image/')) { showToast('Please upload a valid image file.'); return; }
-  if (file.size > 20 * 1024 * 1024) { showToast('File too large — max 20 MB.'); return; }
-  sourceFile = file;
+// Auto-load from sessionStorage when redirected from converter
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('from') !== 'converter') return;
+  const data = sessionStorage.getItem('editor_image_data');
+  const name = sessionStorage.getItem('editor_image_name') || 'image';
+  if (!data) return;
+  sessionStorage.removeItem('editor_image_data');
+  sessionStorage.removeItem('editor_image_name');
+  fetch(data).then(r => r.blob()).then(b => loadFile(new File([b], name, { type: b.type })));
+})();
 
+function loadFile(file) {
+  if (!file.type.startsWith('image/')) { toast('Please upload a valid image file.'); return; }
+  if (file.size > 20 * 1024 * 1024)   { toast('File too large — max 20 MB.');       return; }
+  sourceFile = file;
   const reader = new FileReader();
   reader.onload = e => {
     sourceImg = new Image();
     sourceImg.onload = () => {
-      opStack = [];
-      workW   = sourceImg.naturalWidth;
-      workH   = sourceImg.naturalHeight;
-      activeTool = null;
-
-      // Switch UI
+      state = defaultState();
+      resetUIInputs();
       document.getElementById('upload-screen').style.display = 'none';
-      const shell = document.getElementById('editor-shell');
-      shell.style.display  = 'grid';
-      shell.classList.add('visible');
-
-      // Populate toolbar
+      document.getElementById('editor-shell').style.display  = 'grid';
       document.getElementById('thumb').src = e.target.result;
       document.getElementById('file-name').textContent = file.name;
       document.getElementById('file-meta').textContent =
         `${sourceImg.naturalWidth} × ${sourceImg.naturalHeight} px · ${(file.size/1024).toFixed(0)} KB`;
-      document.getElementById('info-orig').textContent =
-        `${sourceImg.naturalWidth} × ${sourceImg.naturalHeight}`;
-
-      renderCanvas();
-      updateHistoryBar();
-      updateInfo();
+      render();
     };
     sourceImg.src = e.target.result;
   };
@@ -442,504 +406,476 @@ function loadFile(file) {
 function changeImage() {
   document.getElementById('upload-screen').style.display = '';
   document.getElementById('editor-shell').style.display  = 'none';
-  fileInput.value = '';
-  sourceImg = null; sourceFile = null; opStack = []; activeTool = null;
+  fileInput.value = ''; sourceImg = null; sourceFile = null;
+  state = defaultState(); resetUIInputs();
 }
 
-/* ═══════════════════
-   RENDER ENGINE
-   Replays opStack on sourceImg every time.
-═══════════════════ */
-function renderCanvas() {
+/* ══════════════════════════════════════
+   RENDER  — replays full pipeline every call
+══════════════════════════════════════ */
+const canvas = document.getElementById('main-canvas');
+const ctx    = canvas.getContext('2d');
+
+function render() {
   if (!sourceImg) return;
 
-  // Create an offscreen canvas to apply all ops
-  let offscreen = document.createElement('canvas');
-  offscreen.width  = sourceImg.naturalWidth;
-  offscreen.height = sourceImg.naturalHeight;
-  let offCtx = offscreen.getContext('2d');
-  offCtx.drawImage(sourceImg, 0, 0);
+  // 1. Start from original
+  let off = srcToCanvas();
 
-  // Replay each op
-  for (const op of opStack) {
-    offscreen = applyOpToCanvas(offscreen, op);
+  // 2. Crop
+  if (state.crop) {
+    const { x, y, w, h } = state.crop;
+    const c = mk(w, h);
+    c.getContext('2d').drawImage(off, x, y, w, h, 0, 0, w, h);
+    off = c;
   }
 
-  workW = offscreen.width;
-  workH = offscreen.height;
-
-  // Fit to display area (max 700 wide, max 580 tall)
-  const wrap   = document.getElementById('canvas-wrap');
-  const maxW   = wrap.clientWidth  - 2  || 700;
-  const maxH   = 580;
-  const scale  = Math.min(1, maxW / workW, maxH / workH);
-  const dispW  = Math.round(workW * scale);
-  const dispH  = Math.round(workH * scale);
-
-  canvas.width  = dispW;
-  canvas.height = dispH;
-  ctx.drawImage(offscreen, 0, 0, dispW, dispH);
-
-  // If crop tool active, draw selection overlay
-  if (activeTool === 'crop' && cropStart && cropCurrent) {
-    drawCropOverlay();
+  // 3. Rotate
+  if (state.rotate) {
+    const rad = state.rotate * Math.PI / 180;
+    const sw  = off.width, sh = off.height;
+    const rw  = (state.rotate === 90 || state.rotate === 270) ? sh : sw;
+    const rh  = (state.rotate === 90 || state.rotate === 270) ? sw : sh;
+    const c   = mk(rw, rh);
+    const cx  = c.getContext('2d');
+    cx.translate(rw/2, rh/2); cx.rotate(rad);
+    cx.drawImage(off, -sw/2, -sh/2);
+    off = c;
   }
 
-  updateInfo();
+  // 4. Flip
+  if (state.flipH || state.flipV) {
+    const c  = mk(off.width, off.height);
+    const cx = c.getContext('2d');
+    cx.save();
+    cx.translate(state.flipH ? off.width : 0, state.flipV ? off.height : 0);
+    cx.scale(state.flipH ? -1 : 1, state.flipV ? -1 : 1);
+    cx.drawImage(off, 0, 0);
+    cx.restore();
+    off = c;
+  }
+
+  // 5. Resize
+  if (state.resize) {
+    const c = mk(state.resize.w, state.resize.h);
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(off, 0, 0, state.resize.w, state.resize.h);
+    off = c;
+  }
+
+  // 6. Grayscale
+  if (state.grayscale) {
+    const c  = mk(off.width, off.height);
+    const cx = c.getContext('2d');
+    cx.drawImage(off, 0, 0);
+    const id = cx.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < id.data.length; i += 4) {
+      const g = 0.299*id.data[i] + 0.587*id.data[i+1] + 0.114*id.data[i+2];
+      id.data[i] = id.data[i+1] = id.data[i+2] = g;
+    }
+    cx.putImageData(id, 0, 0);
+    off = c;
+  }
+
+  // 7. Brightness / Contrast
+  if (state.brightness !== 0 || state.contrast !== 0) {
+    const c  = mk(off.width, off.height);
+    const cx = c.getContext('2d');
+    cx.drawImage(off, 0, 0);
+    const id     = cx.getImageData(0, 0, c.width, c.height);
+    const d      = id.data;
+    const bright = state.brightness * 2.55;
+    const factor = state.contrast !== 0
+      ? (259*(state.contrast+255)) / (255*(259-state.contrast))
+      : 1;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i]   = cl(factor*(d[i]  -128)+128+bright);
+      d[i+1] = cl(factor*(d[i+1]-128)+128+bright);
+      d[i+2] = cl(factor*(d[i+2]-128)+128+bright);
+    }
+    cx.putImageData(id, 0, 0);
+    off = c;
+  }
+
+  // ── Draw to visible canvas (scaled to fit) ──
+  const wrap  = document.getElementById('canvas-wrap');
+  const maxW  = (wrap.clientWidth  || 700) - 4;
+  const maxH  = 580;
+  const scale = Math.min(1, maxW / off.width, maxH / off.height);
+  canvas.width  = Math.round(off.width  * scale);
+  canvas.height = Math.round(off.height * scale);
+  ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+
+  // Store for crop overlay
+  canvas._offW = off.width;
+  canvas._offH = off.height;
+
+  // Redraw crop overlay if dragging
+  if (cropDragging || (cropStart && cropEnd)) drawCropOverlay();
+
+  updateSummary();
+  updateCropBadge();
 }
 
-/* Applies a single op to an offscreen canvas, returns new canvas */
-function applyOpToCanvas(src, op) {
-  const c   = document.createElement('canvas');
-  const cCtx = c.getContext('2d');
-
-  if (op.type === 'crop') {
-    const { left, top, right, bottom } = op.params;
-    c.width  = right - left;
-    c.height = bottom - top;
-    cCtx.drawImage(src, left, top, c.width, c.height, 0, 0, c.width, c.height);
-
-  } else if (op.type === 'flip') {
-    c.width  = src.width;
-    c.height = src.height;
-    cCtx.save();
-    if (op.params.direction === 'horizontal') {
-      cCtx.translate(c.width, 0); cCtx.scale(-1, 1);
-    } else {
-      cCtx.translate(0, c.height); cCtx.scale(1, -1);
-    }
-    cCtx.drawImage(src, 0, 0);
-    cCtx.restore();
-
-  } else if (op.type === 'rotate') {
-    const deg = op.params.degrees;
-    const rad = deg * Math.PI / 180;
-    if (deg === 90 || deg === 270) {
-      c.width  = src.height;
-      c.height = src.width;
-    } else {
-      c.width  = src.width;
-      c.height = src.height;
-    }
-    cCtx.save();
-    cCtx.translate(c.width / 2, c.height / 2);
-    cCtx.rotate(rad);
-    cCtx.drawImage(src, -src.width / 2, -src.height / 2);
-    cCtx.restore();
-
-  } else if (op.type === 'grayscale') {
-    c.width  = src.width;
-    c.height = src.height;
-    cCtx.drawImage(src, 0, 0);
-    const imgData = cCtx.getImageData(0, 0, c.width, c.height);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      d[i] = d[i+1] = d[i+2] = gray;
-    }
-    cCtx.putImageData(imgData, 0, 0);
-
-  } else if (op.type === 'brightness') {
-    c.width  = src.width;
-    c.height = src.height;
-    cCtx.drawImage(src, 0, 0);
-    const imgData = cCtx.getImageData(0, 0, c.width, c.height);
-    const d = imgData.data;
-    const bright   = op.params.brightness * 2.55;  // -100..100 → -255..255
-    const contrast = op.params.contrast;
-    const factor   = (259 * (contrast + 255)) / (255 * (259 - contrast));
-    for (let i = 0; i < d.length; i += 4) {
-      d[i]   = clamp(factor * (d[i]   - 128) + 128 + bright);
-      d[i+1] = clamp(factor * (d[i+1] - 128) + 128 + bright);
-      d[i+2] = clamp(factor * (d[i+2] - 128) + 128 + bright);
-    }
-    cCtx.putImageData(imgData, 0, 0);
-
-  } else if (op.type === 'resize') {
-    c.width  = op.params.width;
-    c.height = op.params.height;
-    cCtx.imageSmoothingEnabled = true;
-    cCtx.imageSmoothingQuality = 'high';
-    cCtx.drawImage(src, 0, 0, c.width, c.height);
-  }
-
+function srcToCanvas() {
+  const c = mk(sourceImg.naturalWidth, sourceImg.naturalHeight);
+  c.getContext('2d').drawImage(sourceImg, 0, 0);
   return c;
 }
+function mk(w, h) { const c = document.createElement('canvas'); c.width=w; c.height=h; return c; }
+function cl(v)    { return Math.max(0, Math.min(255, Math.round(v))); }
 
-function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+/* ══════════════════════════════════════
+   CROP — drag on canvas + manual inputs
+   Both update state.crop and re-render.
+══════════════════════════════════════ */
+let cropDragging = false, cropStart = null, cropEnd = null;
 
-/* ═══════════════════
-   CROP TOOL
-═══════════════════ */
-function selectTool(tool) {
-  activeTool = tool;
-  // Update op-btn active state
-  document.querySelectorAll('.op-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.op === tool);
-  });
-  // Show correct panel
-  document.getElementById('tool-panel').classList.remove('hidden');
-  document.querySelectorAll('.tool-pane').forEach(p => p.classList.add('hidden'));
-  document.getElementById(`panel-${tool}`).classList.remove('hidden');
+canvas.addEventListener('mousedown',  onCropDown);
+canvas.addEventListener('mousemove',  onCropMove);
+canvas.addEventListener('mouseup',    onCropUp);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); onCropDown(e.touches[0]); }, { passive:false });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); onCropMove(e.touches[0]); }, { passive:false });
+canvas.addEventListener('touchend',   e => { e.preventDefault(); onCropUp(e.changedTouches[0]); }, { passive:false });
 
-  if (tool === 'crop') {
-    canvas.classList.add('crop-mode');
-    cropStart = null; cropCurrent = null;
-    document.getElementById('crop-info').textContent = 'Drag on image to select';
-    attachCropEvents();
-  } else {
-    canvas.classList.remove('crop-mode');
-    detachCropEvents();
-    renderCanvas();
-  }
-}
-
-function cancelTool() {
-  activeTool = null;
-  cropStart = null; cropCurrent = null;
-  canvas.classList.remove('crop-mode');
-  detachCropEvents();
-  document.getElementById('tool-panel').classList.add('hidden');
-  document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'));
-  renderCanvas();
-}
-
-/* Crop events */
-function attachCropEvents() {
-  canvas.addEventListener('mousedown',  onCropDown);
-  canvas.addEventListener('mousemove',  onCropMove);
-  canvas.addEventListener('mouseup',    onCropUp);
-  canvas.addEventListener('touchstart', onCropTouchDown, { passive: false });
-  canvas.addEventListener('touchmove',  onCropTouchMove,  { passive: false });
-  canvas.addEventListener('touchend',   onCropTouchUp,   { passive: false });
-}
-function detachCropEvents() {
-  canvas.removeEventListener('mousedown',  onCropDown);
-  canvas.removeEventListener('mousemove',  onCropMove);
-  canvas.removeEventListener('mouseup',    onCropUp);
-  canvas.removeEventListener('touchstart', onCropTouchDown);
-  canvas.removeEventListener('touchmove',  onCropTouchMove);
-  canvas.removeEventListener('touchend',   onCropTouchUp);
-}
-
-function canvasPos(e) {
+function cPos(e) {
   const r = canvas.getBoundingClientRect();
-  return {
-    x: Math.max(0, Math.min(canvas.width,  e.clientX - r.left)),
-    y: Math.max(0, Math.min(canvas.height, e.clientY - r.top )),
-  };
+  return { x: Math.max(0,Math.min(canvas.width, e.clientX-r.left)), y: Math.max(0,Math.min(canvas.height, e.clientY-r.top)) };
 }
-function onCropDown(e)  { isCropping = true; cropStart = canvasPos(e); cropCurrent = cropStart; }
-function onCropMove(e)  { if (!isCropping) return; cropCurrent = canvasPos(e); renderCanvas(); }
-function onCropUp(e)    { isCropping = false; cropCurrent = canvasPos(e); renderCanvas(); updateCropInfo(); }
-function onCropTouchDown(e) { e.preventDefault(); onCropDown(e.touches[0]); }
-function onCropTouchMove(e) { e.preventDefault(); onCropMove(e.touches[0]); }
-function onCropTouchUp(e)   { e.preventDefault(); onCropUp(e.changedTouches[0]); }
+function onCropDown(e) { cropDragging=true; cropStart=cPos(e); cropEnd=cPos(e); }
+function onCropMove(e) { if (!cropDragging) return; cropEnd=cPos(e); render(); }
+function onCropUp(e)   {
+  cropDragging=false; cropEnd=cPos(e);
+  commitCropFromDrag();
+}
 
-function normaliseRect(a, b) {
-  return {
-    x: Math.min(a.x, b.x), y: Math.min(a.y, b.y),
-    w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y),
+function commitCropFromDrag() {
+  if (!cropStart || !cropEnd) return;
+  const r = normR(cropStart, cropEnd);
+  if (r.w < 4 || r.h < 4) { cropStart=null; cropEnd=null; return; }
+
+  // Convert display px → real image px at the pre-crop stage
+  // canvas._offW/H is the full processed image size (post all ops except crop doesn't apply yet)
+  // But crop acts on the original — so we need coords relative to the original after prior transforms
+  // Simpler model: crop always works on the image AS IT APPEARS (post rotate/flip/resize)
+  // so convert canvas coords → off coords
+  const scaleX = (canvas._offW || canvas.width)  / canvas.width;
+  const scaleY = (canvas._offH || canvas.height) / canvas.height;
+
+  // We commit crop in terms of the current "working" space (after rotate/flip)
+  // Store as fraction so it survives rotate toggling
+  state.crop = {
+    x: Math.round(r.x * scaleX), y: Math.round(r.y * scaleY),
+    w: Math.round(r.w * scaleX), h: Math.round(r.h * scaleY),
   };
+  // Clamp
+  state.crop.x = Math.max(0, state.crop.x);
+  state.crop.y = Math.max(0, state.crop.y);
+  state.crop.w = Math.min(state.crop.w, (canvas._offW||canvas.width)  - state.crop.x);
+  state.crop.h = Math.min(state.crop.h, (canvas._offH||canvas.height) - state.crop.y);
+
+  syncCropInputs();
+  cropStart=null; cropEnd=null;
+  render();
+}
+
+// Manual crop inputs
+function cropFromInputs() {
+  const x = parseInt(document.getElementById('crop-x').value)||0;
+  const y = parseInt(document.getElementById('crop-y').value)||0;
+  const w = parseInt(document.getElementById('crop-w').value)||0;
+  const h = parseInt(document.getElementById('crop-h').value)||0;
+  if (w > 0 && h > 0) {
+    state.crop = { x, y, w, h };
+  } else {
+    state.crop = null;
+  }
+  render();
+}
+
+function syncCropInputs() {
+  if (!state.crop) return;
+  document.getElementById('crop-x').value = state.crop.x;
+  document.getElementById('crop-y').value = state.crop.y;
+  document.getElementById('crop-w').value = state.crop.w;
+  document.getElementById('crop-h').value = state.crop.h;
+}
+
+function clearCrop() {
+  state.crop = null;
+  ['crop-x','crop-y','crop-w','crop-h'].forEach(id => document.getElementById(id).value='');
+  cropStart=null; cropEnd=null;
+  render();
+}
+
+function normR(a,b) {
+  return { x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(a.x-b.x), h:Math.abs(a.y-b.y) };
 }
 
 function drawCropOverlay() {
-  if (!cropStart || !cropCurrent) return;
-  const r = normaliseRect(cropStart, cropCurrent);
-  if (r.w < 2 || r.h < 2) return;
-
-  // Dim outside
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Clear selection
-  ctx.clearRect(r.x, r.y, r.w, r.h);
-  ctx.drawImage(canvas, r.x, r.y, r.w, r.h, r.x, r.y, r.w, r.h);
-
-  // Re-draw image in selection from offscreen
-  // (Actually the canvas already has the image; we just revealed it above)
-
-  // Border
-  ctx.strokeStyle = '#6366f1';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([]);
-  ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
-
-  // Rule-of-thirds
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(r.x + r.w*i/3, r.y); ctx.lineTo(r.x + r.w*i/3, r.y+r.h); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(r.x, r.y + r.h*i/3); ctx.lineTo(r.x+r.w, r.y + r.h*i/3); ctx.stroke();
+  let r;
+  if (cropDragging && cropStart && cropEnd) {
+    r = normR(cropStart, cropEnd);
+  } else if (state.crop) {
+    // draw committed crop region in display coords
+    const scaleX = canvas.width  / (canvas._offW || canvas.width);
+    const scaleY = canvas.height / (canvas._offH || canvas.height);
+    r = { x: state.crop.x*scaleX, y: state.crop.y*scaleY, w: state.crop.w*scaleX, h: state.crop.h*scaleY };
   }
+  if (!r || r.w < 2) return;
 
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(r.x, r.y, r.w, r.h);
+
+  // Re-draw image in selection area from the pre-dim frame
+  // (we cleared it, so just draw the offscreen crop)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+  // re-draw just that portion — we already have the image on canvas before overlay
+  ctx.restore();
+
+  ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.strokeRect(r.x+1, r.y+1, r.w-2, r.h-2);
+
+  // Rule of thirds
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=0.75;
+  for (let i=1;i<3;i++){
+    ctx.beginPath(); ctx.moveTo(r.x+r.w*i/3,r.y); ctx.lineTo(r.x+r.w*i/3,r.y+r.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r.x,r.y+r.h*i/3); ctx.lineTo(r.x+r.w,r.y+r.h*i/3); ctx.stroke();
+  }
   // Corner handles
-  ctx.fillStyle = '#6366f1';
-  [[r.x,r.y],[r.x+r.w,r.y],[r.x,r.y+r.h],[r.x+r.w,r.y+r.h]].forEach(([cx,cy]) => {
-    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#6366f1';
+  [[r.x,r.y],[r.x+r.w,r.y],[r.x,r.y+r.h],[r.x+r.w,r.y+r.h]].forEach(([cx,cy])=>{
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
   });
 }
 
-function updateCropInfo() {
-  if (!cropStart || !cropCurrent) return;
-  const r = normaliseRect(cropStart, cropCurrent);
-  if (r.w < 2) { document.getElementById('crop-info').textContent = 'Drag to select'; return; }
-  // Convert display px → real px
-  const scaleX = workW / canvas.width;
-  const scaleY = workH / canvas.height;
-  const rw = Math.round(r.w * scaleX);
-  const rh = Math.round(r.h * scaleY);
-  document.getElementById('crop-info').textContent = `${rw} × ${rh} px`;
-}
-
-function applyCrop() {
-  if (!cropStart || !cropCurrent) { showToast('Drag to select a crop area first.'); return; }
-  const r = normaliseRect(cropStart, cropCurrent);
-  if (r.w < 4 || r.h < 4) { showToast('Selection too small.'); return; }
-
-  // Convert to real image coords
-  const scaleX = workW / canvas.width;
-  const scaleY = workH / canvas.height;
-  const left   = Math.round(r.x * scaleX);
-  const top    = Math.round(r.y * scaleY);
-  const right  = Math.round((r.x + r.w) * scaleX);
-  const bottom = Math.round((r.y + r.h) * scaleY);
-
-  opStack.push({ type: 'crop', params: { left, top, right, bottom },
-    label: `Crop ${right-left}×${bottom-top}` });
-
-  cropStart = null; cropCurrent = null;
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
-}
-
-/* ═══════════════════
-   FLIP
-═══════════════════ */
-function applyFlip(dir) {
-  opStack.push({ type: 'flip', params: { direction: dir },
-    label: `Flip ${dir}` });
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
-}
-
-/* ═══════════════════
-   ROTATE
-═══════════════════ */
-function applyRotate(deg) {
-  opStack.push({ type: 'rotate', params: { degrees: deg },
-    label: `Rotate ${deg}°` });
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
-}
-
-/* ═══════════════════
-   GRAYSCALE (instant, no panel)
-═══════════════════ */
-function applyGrayscale() {
-  // Don't stack multiple grayscale
-  if (opStack.find(o => o.type === 'grayscale')) {
-    showToast('Grayscale already applied.'); return;
+function updateCropBadge() {
+  const badge  = document.getElementById('crop-badge');
+  const clrBtn = document.getElementById('crop-clear-btn');
+  if (state.crop) {
+    badge.textContent = `${state.crop.w}×${state.crop.h}`;
+    badge.className = 'text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium';
+    clrBtn.classList.remove('hidden');
+    document.getElementById('crop-dims').textContent = `${state.crop.w} × ${state.crop.h} px`;
+  } else {
+    badge.textContent = 'off';
+    badge.className = 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium';
+    clrBtn.classList.add('hidden');
+    document.getElementById('crop-dims').textContent = 'none';
   }
-  opStack.push({ type: 'grayscale', params: {}, label: 'Grayscale' });
-  renderCanvas();
-  updateHistoryBar();
 }
 
-/* ═══════════════════
-   BRIGHTNESS / CONTRAST
-═══════════════════ */
-function previewBrightness() {
-  const bright   = parseInt(document.getElementById('bright-slider').value);
-  const contrast = parseInt(document.getElementById('contrast-slider').value);
-  document.getElementById('bright-val').textContent   = bright;
-  document.getElementById('contrast-val').textContent = contrast;
-
-  // Live preview: render stack + a temporary brightness op
-  renderCanvasWithExtra({ type: 'brightness', params: { brightness: bright, contrast }, label: '' });
-}
-
-function renderCanvasWithExtra(extraOp) {
-  if (!sourceImg) return;
-  let offscreen = document.createElement('canvas');
-  offscreen.width  = sourceImg.naturalWidth;
-  offscreen.height = sourceImg.naturalHeight;
-  offscreen.getContext('2d').drawImage(sourceImg, 0, 0);
-  for (const op of opStack) offscreen = applyOpToCanvas(offscreen, op);
-  offscreen = applyOpToCanvas(offscreen, extraOp);
-
-  workW = offscreen.width; workH = offscreen.height;
-  const wrap  = document.getElementById('canvas-wrap');
-  const maxW  = wrap.clientWidth - 2 || 700;
-  const scale = Math.min(1, maxW / workW, 580 / workH);
-  canvas.width  = Math.round(workW * scale);
-  canvas.height = Math.round(workH * scale);
-  ctx.drawImage(offscreen, 0, 0, canvas.width, canvas.height);
-  updateInfo();
-}
-
-function applyBrightness() {
-  const bright   = parseInt(document.getElementById('bright-slider').value);
-  const contrast = parseInt(document.getElementById('contrast-slider').value);
-  if (bright === 0 && contrast === 0) { cancelTool(); return; }
-  opStack.push({ type: 'brightness', params: { brightness: bright, contrast },
-    label: `Brightness ${bright>0?'+':''}${bright} Contrast ${contrast>0?'+':''}${contrast}` });
-  // reset sliders
-  document.getElementById('bright-slider').value   = 0;
-  document.getElementById('contrast-slider').value = 0;
-  document.getElementById('bright-val').textContent   = '0';
-  document.getElementById('contrast-val').textContent = '0';
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
-}
-
-/* ═══════════════════
-   RESIZE
-═══════════════════ */
-function previewResize() {
-  let w = parseInt(document.getElementById('rz-w').value) || 0;
-  let h = parseInt(document.getElementById('rz-h').value) || 0;
-  if (!w && !h) { document.getElementById('rz-preview-info').classList.add('hidden'); return; }
-
-  const keepRatio = document.getElementById('rz-ratio').checked;
-  if (keepRatio) {
-    const ratio = workW / workH;
-    if (w && !h) h = Math.round(w / ratio);
-    else if (h && !w) w = Math.round(h * ratio);
-    else if (w && h) { /* both provided — honour as-is */ }
+/* ══════════════════════════════════════
+   ROTATE — toggle: click same value again to remove
+══════════════════════════════════════ */
+function toggleRotate(deg) {
+  // If already set to this, remove it (toggle off)
+  if (state.rotate === deg) {
+    state.rotate = 0;
+  } else {
+    state.rotate = deg;
   }
-  if (w < 1 || h < 1) return;
-
-  const info = document.getElementById('rz-preview-info');
-  info.textContent = `→ ${w} × ${h} px`;
-  info.classList.remove('hidden');
-
-  renderCanvasWithExtra({ type: 'resize', params: { width: w, height: h }, label: '' });
+  updateRotateUI();
+  render();
 }
 
-function applyResize() {
-  let w = parseInt(document.getElementById('rz-w').value) || 0;
-  let h = parseInt(document.getElementById('rz-h').value) || 0;
-  if (!w && !h) { showToast('Enter at least one dimension.'); return; }
+function updateRotateUI() {
+  [90,180,270].forEach(d => {
+    const btn = document.getElementById(`rot-${d}`);
+    btn.classList.toggle('on', state.rotate === d);
+  });
+  document.getElementById('rotate-badge').textContent = state.rotate ? `${state.rotate}°` : '0°';
+  document.getElementById('rotate-badge').className = state.rotate
+    ? 'text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium'
+    : 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium';
+  document.getElementById('rot-total').textContent = state.rotate + '°';
+}
 
-  const keepRatio = document.getElementById('rz-ratio').checked;
-  const ratio     = workW / workH;
-  if (keepRatio) {
-    if (w && !h) h = Math.round(w / ratio);
-    else if (h && !w) w = Math.round(h * ratio);
+/* ══════════════════════════════════════
+   FLIP — toggle: click same button again to turn off
+══════════════════════════════════════ */
+function toggleFlip(dir) {
+  if (dir === 'h') state.flipH = !state.flipH;
+  else             state.flipV = !state.flipV;
+  updateFlipUI();
+  render();
+}
+
+function updateFlipUI() {
+  document.getElementById('flip-h-btn').classList.toggle('on', state.flipH);
+  document.getElementById('flip-v-btn').classList.toggle('on', state.flipV);
+  const parts = [];
+  if (state.flipH) parts.push('H');
+  if (state.flipV) parts.push('V');
+  const badge = document.getElementById('flip-badge');
+  badge.textContent = parts.length ? parts.join('+') : 'off';
+  badge.className = parts.length
+    ? 'text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium'
+    : 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium';
+}
+
+/* ══════════════════════════════════════
+   RESIZE — type values, live preview
+══════════════════════════════════════ */
+function onResizeInput(changed) {
+  let w = parseInt(document.getElementById('rz-w').value)||0;
+  let h = parseInt(document.getElementById('rz-h').value)||0;
+  const lock = document.getElementById('rz-lock').checked;
+
+  if (lock && sourceImg) {
+    const { w: cw, h: ch } = croppedDims();
+    const ratio = cw / ch;
+    if (changed==='w' && w) h = Math.round(w / ratio);
+    else if (changed==='h' && h) w = Math.round(h * ratio);
+    // Sync the other input
+    if (changed==='w' && h) document.getElementById('rz-h').value = h;
+    if (changed==='h' && w) document.getElementById('rz-w').value = w;
   }
-  if (w < 1 || h < 1) { showToast('Invalid dimensions.'); return; }
 
-  opStack.push({ type: 'resize', params: { width: w, height: h },
-    label: `Resize ${w}×${h}` });
+  if (w > 0 && h > 0) {
+    state.resize = { w, h };
+    document.getElementById('rz-info').textContent = `→ ${w} × ${h} px`;
+    document.getElementById('rz-info').classList.remove('hidden');
+  } else {
+    state.resize = null;
+    document.getElementById('rz-info').classList.add('hidden');
+  }
+  render();
+}
+
+function clearResize() {
+  state.resize = null;
   document.getElementById('rz-w').value = '';
   document.getElementById('rz-h').value = '';
-  document.getElementById('rz-preview-info').classList.add('hidden');
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
+  document.getElementById('rz-info').classList.add('hidden');
+  render();
 }
 
-/* ═══════════════════
-   UNDO / RESET
-═══════════════════ */
-function undoLast() {
-  if (!opStack.length) { showToast('Nothing to undo.'); return; }
-  opStack.pop();
-  renderCanvas();
-  updateHistoryBar();
+/* ══════════════════════════════════════
+   BRIGHTNESS / CONTRAST
+══════════════════════════════════════ */
+function resetBrightness() {
+  state.brightness = 0; state.contrast = 0;
+  document.getElementById('bright-sl').value    = 0;
+  document.getElementById('contrast-sl').value  = 0;
+  document.getElementById('bright-val').textContent   = '0';
+  document.getElementById('contrast-val').textContent = '0';
+  render();
 }
 
-function resetEditor() {
-  opStack = [];
-  cancelTool();
-  renderCanvas();
-  updateHistoryBar();
-}
+/* ══════════════════════════════════════
+   SUMMARY BAR
+══════════════════════════════════════ */
+function updateSummary() {
+  const bar   = document.getElementById('summary-bar');
+  const parts = [];
+  if (state.crop)              parts.push(`Crop ${state.crop.w}×${state.crop.h}`);
+  if (state.rotate)            parts.push(`Rotate ${state.rotate}°`);
+  if (state.flipH)             parts.push('Flip H');
+  if (state.flipV)             parts.push('Flip V');
+  if (state.grayscale)         parts.push('Grayscale');
+  if (state.brightness !== 0)  parts.push(`Brightness ${state.brightness>0?'+':''}${state.brightness}`);
+  if (state.contrast !== 0)    parts.push(`Contrast ${state.contrast>0?'+':''}${state.contrast}`);
+  if (state.resize)            parts.push(`Resize ${state.resize.w}×${state.resize.h}`);
 
-function removeOp(idx) {
-  opStack.splice(idx, 1);
-  renderCanvas();
-  updateHistoryBar();
-}
-
-/* ═══════════════════
-   HISTORY BAR
-═══════════════════ */
-function updateHistoryBar() {
-  const bar   = document.getElementById('history-bar');
-  const chips = document.getElementById('history-chips');
-  if (!opStack.length) { bar.classList.add('hidden'); return; }
+  if (!parts.length) { bar.classList.add('hidden'); return; }
   bar.classList.remove('hidden');
-  chips.innerHTML = opStack.map((op, i) =>
-    `<span class="history-chip">
-      ${op.label}
-      <button onclick="removeOp(${i})" title="Remove">✕</button>
-    </span>`
-  ).join('');
-  document.getElementById('info-ops').textContent = opStack.length;
+  bar.innerHTML = '<span class="font-semibold text-gray-600 mr-1">Active:</span>' +
+    parts.map(p => `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">${p}</span>`).join('');
 }
 
-function updateInfo() {
-  document.getElementById('info-dims').textContent = `${workW} × ${workH} px`;
+/* ══════════════════════════════════════
+   RESET ALL
+══════════════════════════════════════ */
+function resetAllEdits() {
+  state = defaultState();
+  resetUIInputs();
+  cropStart = null; cropEnd = null; cropDragging = false;
+  render();
 }
 
-/* ═══════════════════
-   DOWNLOAD
-   Sends ops to server for high-quality processing
-═══════════════════ */
+function resetUIInputs() {
+  // Crop
+  ['crop-x','crop-y','crop-w','crop-h'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  // Rotate
+  updateRotateUI();
+  // Flip
+  updateFlipUI();
+  // Grayscale
+  const gs = document.getElementById('gs-toggle'); if(gs) gs.checked=false;
+  // Brightness
+  const bs=document.getElementById('bright-sl'), cs=document.getElementById('contrast-sl');
+  if(bs) bs.value=0; if(cs) cs.value=0;
+  document.getElementById('bright-val').textContent='0';
+  document.getElementById('contrast-val').textContent='0';
+  // Resize
+  const rw=document.getElementById('rz-w'), rh=document.getElementById('rz-h');
+  if(rw) rw.value=''; if(rh) rh.value='';
+  const ri=document.getElementById('rz-info'); if(ri) ri.classList.add('hidden');
+}
+
+/* ══════════════════════════════════════
+   DOWNLOAD  (server-side full-quality)
+══════════════════════════════════════ */
 async function downloadImage() {
-  if (!sourceFile) { showToast('No image loaded.'); return; }
-
+  if (!sourceFile) { toast('No image loaded.'); return; }
   const btn = document.getElementById('dl-btn');
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-sm"></span> Processing…`;
+  btn.innerHTML = '<span class="spinner-sm"></span> Processing…';
 
-  const format  = document.getElementById('dl-format').value;
-  const quality = document.getElementById('dl-quality').value;
+  // Build an ops array from state for the server to replay with Pillow
+  const ops = [];
+  if (state.crop)
+    ops.push({ type:'crop',   params:{ left:state.crop.x, top:state.crop.y, right:state.crop.x+state.crop.w, bottom:state.crop.y+state.crop.h }});
+  if (state.rotate)
+    ops.push({ type:'rotate', params:{ degrees:state.rotate }});
+  if (state.flipH)
+    ops.push({ type:'flip',   params:{ direction:'horizontal' }});
+  if (state.flipV)
+    ops.push({ type:'flip',   params:{ direction:'vertical' }});
+  if (state.grayscale)
+    ops.push({ type:'grayscale', params:{} });
+  if (state.brightness !== 0 || state.contrast !== 0)
+    ops.push({ type:'brightness', params:{ brightness:state.brightness, contrast:state.contrast }});
+  if (state.resize)
+    ops.push({ type:'resize', params:{ width:state.resize.w, height:state.resize.h }});
 
   const fd = new FormData();
   fd.append('csrfmiddlewaretoken', CSRF);
-  fd.append('image', sourceFile);
-  fd.append('ops',    JSON.stringify(opStack.map(o => ({ type: o.type, params: o.params }))));
-  fd.append('format', format);
-  fd.append('quality', quality);
+  fd.append('image',   sourceFile);
+  fd.append('ops',     JSON.stringify(ops));
+  fd.append('format',  document.getElementById('dl-format').value);
+  fd.append('quality', document.getElementById('dl-quality').value);
 
   try {
-    const res = await fetch('{% url "image_converter:edit_apply" %}', { method: 'POST', body: fd });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showToast(err.message || 'Download failed.'); return;
-    }
+    const res = await fetch('{% url "image_converter:edit_apply" %}', { method:'POST', body:fd });
+    if (!res.ok) { const e=await res.json().catch(()=>({})); toast(e.message||'Download failed.'); return; }
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    const disposition = res.headers.get('Content-Disposition') || '';
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    a.download = match ? match[1] : `edited_${sourceFile.name}`;
-    a.href = url;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch { showToast('Network error. Please try again.'); }
+    const disp = res.headers.get('Content-Disposition')||'';
+    const m    = disp.match(/filename="?([^"]+)"?/);
+    a.download = m ? m[1] : `edited_${sourceFile.name}`;
+    a.href = url; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch { toast('Network error. Please try again.'); }
   finally {
     btn.disabled = false;
-    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download Image`;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Download Image';
   }
 }
 
-/* ═══════════════════
+/* ══════════════════════════════════════
    TOAST
-═══════════════════ */
-function showToast(msg) {
+══════════════════════════════════════ */
+let _tt = null;
+function toast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.remove('hidden');
-  setTimeout(() => t.classList.add('hidden'), 3200);
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(_tt); _tt = setTimeout(()=>t.classList.add('hidden'), 3200);
 }
 </script>
 {% endblock %}

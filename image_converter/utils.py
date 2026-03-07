@@ -255,3 +255,95 @@ def compress_image_quality(file, quality: int = 60) -> io.BytesIO:
     img.save(buf, **kwargs)
     buf.seek(0)
     return buf
+
+
+def compress_image_quality_fmt(file, quality: int = 75, output_format: str = None) -> io.BytesIO:
+    """
+    Compress image to a specific quality with optional format override.
+    output_format: 'JPEG' | 'PNG' | 'WEBP' | None (keep original).
+    """
+    img, orig_fmt = _open_for_processing(file)
+    fmt = (output_format or orig_fmt).upper()
+    if fmt == 'JPG':
+        fmt = 'JPEG'
+
+    img = _normalise_for_fmt(img, fmt)
+
+    buf = io.BytesIO()
+    kwargs = {'format': fmt}
+    if fmt in ('JPEG', 'WEBP'):
+        kwargs['quality'] = max(1, min(95, quality))
+        kwargs['optimize'] = True
+    elif fmt == 'PNG':
+        level = max(0, min(9, round(9 - (quality / 95) * 9)))
+        kwargs['compress_level'] = level
+        kwargs['optimize'] = True
+    img.save(buf, **kwargs)
+    buf.seek(0)
+    return buf, fmt
+
+
+def compress_to_target_size(file, target_kb: int, output_format: str = None) -> tuple:
+    """
+    Binary-search for the highest quality that keeps file at or below target_kb.
+    Returns (BytesIO, quality_used, save_format).
+    If PNG can't hit the target it falls back to WEBP.
+    """
+    img, orig_fmt = _open_for_processing(file)
+    fmt = (output_format or orig_fmt).upper()
+    if fmt == 'JPG':
+        fmt = 'JPEG'
+
+    target_bytes = target_kb * 1024
+
+    # PNG can't go lossy — try once, then fall back to WEBP
+    if fmt == 'PNG':
+        buf = io.BytesIO()
+        img_copy = _normalise_for_fmt(img, 'PNG')
+        img_copy.save(buf, format='PNG', optimize=True)
+        if buf.getbuffer().nbytes <= target_bytes:
+            buf.seek(0)
+            return buf, None, 'PNG'
+        fmt = 'WEBP'   # fall back
+
+    img = _normalise_for_fmt(img, fmt)
+
+    lo, hi = 1, 95
+    best_buf, best_q = None, 1
+    for _ in range(13):
+        mid = (lo + hi) // 2
+        buf = io.BytesIO()
+        img.save(buf, format=fmt, quality=mid, optimize=True)
+        if buf.getbuffer().nbytes <= target_bytes:
+            best_buf, best_q = buf, mid
+            lo = mid + 1
+        else:
+            hi = mid - 1
+        if lo > hi:
+            break
+
+    if best_buf is None:
+        # Even q=1 is over target — return the smallest we can
+        best_buf = io.BytesIO()
+        img.save(best_buf, format=fmt, quality=1, optimize=True)
+        best_q = 1
+
+    best_buf.seek(0)
+    return best_buf, best_q, fmt
+
+
+def _normalise_for_fmt(img: Image.Image, fmt: str) -> Image.Image:
+    """Ensure image colour mode is compatible with target format."""
+    if fmt == 'JPEG':
+        if img.mode in ('RGBA', 'LA', 'P'):
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            bg = Image.new('RGB', img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+            return bg
+        if img.mode != 'RGB':
+            return img.convert('RGB')
+    elif fmt == 'WEBP':
+        if img.mode not in ('RGB', 'RGBA'):
+            return img.convert('RGB')
+    return img

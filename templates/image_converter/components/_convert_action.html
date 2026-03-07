@@ -30,7 +30,7 @@
   <p class="text-sm font-medium" id="error-msg"></p>
 </div>
 
-<!-- Result -->
+<!-- Result — two clean buttons: Download & Edit Image -->
 <div id="result-box" class="hidden mt-6 bg-green-50 border border-green-200 rounded-2xl p-6 fade-in">
   <div class="flex items-start gap-4">
     <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
@@ -51,15 +51,36 @@
       </div>
     </div>
   </div>
-  <button
-    id="download-btn"
-    onclick="openOpsModal()"
-    class="mt-5 inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition cursor-pointer"
-  >
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-    </svg>
-    Download Image
-  </button>
-  <button onclick="resetAll()" class="mt-3 ml-3 text-sm text-green-700 underline hover:text-green-900">Convert another</button>
+
+  <!-- Action buttons -->
+  <div class="mt-5 flex flex-wrap items-center gap-3">
+
+    <!-- Download: direct, no popup -->
+    <button
+      id="download-btn"
+      onclick="triggerDownload()"
+      class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Download
+    </button>
+
+    <!-- Edit: fetch converted file → sessionStorage → redirect to /edit/ -->
+    <button
+      id="edit-btn"
+      onclick="openEditor()"
+      class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      Edit Image
+    </button>
+
+    <button onclick="resetAll()" class="text-sm text-green-700 underline hover:text-green-900 ml-1">
+      Convert another
+    </button>
+  </div>
 </div>

@@ -29,6 +29,12 @@
 <main class="max-w-4xl mx-auto px-4 py-10">
 
   <div class="mb-10 text-center">
+    <div class="inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wider">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+      </svg>
+      Convert Any Image — upload, choose format, and download. Free, fast, and stored securely.
+    </div>
     <h1 class="font-display text-5xl font-bold text-gray-900 mb-2">Convert Any Image</h1>
     <p class="text-gray-500 text-base">Upload · Choose Format · Download. Free, fast, and stored securely.</p>
   </div>
@@ -44,11 +50,8 @@
   {% include "image_converter/components/_recent_conversions.html" %}
 
 </main>
-
-{% include "image_converter/components/_ops_modal.html" %}
 {% endblock %}
 
 {% block extra_scripts %}
   {% include "image_converter/components/_js_converter.html" %}
-  {% include "image_converter/components/_js_modal.html" %}
 {% endblock %}

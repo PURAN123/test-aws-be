@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Image Compressor — ImageShift{% endblock %}
+
+{% block extra_styles %}
+.drop-zone { border: 2px dashed #d1d5db; transition: all .25s; }
+.drop-zone.dragover { border-color: #7c3aed; background: #f5f3ff; }
+
+.mode-tab {
+  padding: 8px 22px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s; border: none; background: none;
+}
+.mode-tab.active   { background: #7c3aed; color: white; }
+.mode-tab:not(.active) { background: #f3f4f6; color: #6b7280; }
+.mode-tab:not(.active):hover { background: #ede9fe; color: #7c3aed; }
+
+.fmt-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid #e5e7eb; color: #6b7280; cursor: pointer;
+  transition: all .15s; background: white;
+}
+.fmt-btn.active { border-color: #7c3aed; background: #f5f3ff; color: #6d28d9; }
+.fmt-btn:hover:not(.active) { border-color: #c4b5fd; color: #6d28d9; }
+
+.prog-inner {
+  background: linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed);
+  background-size: 200% 100%;
+  animation: prog 1.4s ease-in-out infinite;
+}
+@keyframes prog { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.spin { width:22px;height:22px;border-radius:50%;border:3px solid #ede9fe;
+        border-top-color:#7c3aed;animation:sp .8s linear infinite;display:inline-block; }
+@keyframes sp { to{transform:rotate(360deg)} }
+
+.fade-in { animation: fi .3s ease; }
+@keyframes fi { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+.preview-img {
+  max-height: 260px; object-fit: contain; border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0/16px 16px;
+}
+{% endblock %}
+
+{% block content %}
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <div class="mb-10 text-center">
+    <div class="inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wider">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+      </svg>
+      Compress Images — reduce file size by quality level or hit an exact KB target
+    </div>
+    <h1 class="font-display text-5xl font-bold text-gray-900 mb-2">Image Compressor</h1>
+    <p class="text-gray-400">Reduce file size by quality level or hit an exact KB target</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-8">
+
+    <!-- ── Step 1: Upload ── -->
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-violet-500 mb-3">Step 1 — Upload Image</p>
+      <div id="drop-zone"
+        class="drop-zone rounded-xl p-10 text-center bg-gray-50 hover:bg-violet-50 hover:border-violet-400 cursor-pointer">
+        <input type="file" id="img-input" accept="image/*" class="hidden"/>
+
+        <div id="dz-placeholder">
+          <label for="img-input" class="cursor-pointer block">
+            <div class="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg class="w-7 h-7 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+            </div>
+            <p class="text-gray-700 font-medium mb-1">Drag & drop your image here</p>
+            <p class="text-sm text-gray-400">or <span class="text-violet-500 underline">browse to upload</span></p>
+            <p class="text-xs text-gray-400 mt-2">JPG · PNG · WEBP · BMP · TIFF · Max 20 MB</p>
+          </label>
+        </div>
+
+        <div id="dz-preview" class="hidden items-center gap-4">
+          <img id="thumb-sm" class="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0" src="" alt=""/>
+          <div class="text-left flex-1 min-w-0">
+            <p id="up-name" class="font-semibold text-gray-800 text-sm truncate"></p>
+            <p id="up-meta" class="text-xs text-gray-400 mt-0.5"></p>
+          </div>
+          <button onclick="resetAll()"
+            class="text-xs text-red-400 hover:text-red-600 border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-lg transition shrink-0">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-100"></div>
+
+    <!-- ── Step 2: Settings ── -->
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-violet-500 mb-4">Step 2 — Settings</p>
+
+      <!-- Mode tabs -->
+      <div class="flex gap-2 mb-6 bg-gray-50 p-1 rounded-xl w-fit">
+        <button class="mode-tab active" id="tab-quality" onclick="setMode('quality')">Quality-based</button>
+        <button class="mode-tab"        id="tab-target"  onclick="setMode('target')">Target file size</button>
+      </div>
+
+      <!-- Quality panel -->
+      <div id="panel-quality" class="space-y-3">
+        <label class="text-sm font-medium text-gray-700 flex justify-between">
+          Quality
+          <span id="q-display" class="text-violet-600 font-bold text-base">75</span>
+        </label>
+        <input type="range" id="quality-sl" min="1" max="95" value="75"
+          oninput="syncQ(this.value)" class="w-full accent-violet-600"/>
+        <div class="flex justify-between text-xs text-gray-400">
+          <span>1 — smallest file</span><span>95 — best quality</span>
+        </div>
+        <div class="flex items-center gap-3 pt-1">
+          <span class="text-sm text-gray-400">Manual:</span>
+          <input type="number" id="q-num" min="1" max="95" value="75"
+            class="border border-gray-200 focus:border-violet-400 rounded-lg px-3 py-1.5 text-sm w-20 outline-none"
+            oninput="syncQ(this.value)"/>
+          <span class="text-xs text-gray-400">/ 95</span>
+        </div>
+      </div>
+
+      <!-- Target panel -->
+      <div id="panel-target" class="hidden space-y-3">
+        <label class="text-sm font-medium text-gray-700 block">Target file size</label>
+        <div class="flex items-center border border-gray-200 focus-within:border-violet-400 rounded-xl overflow-hidden transition w-56">
+          <input type="number" id="target-kb" min="1" placeholder="e.g. 150"
+            class="flex-1 px-4 py-2.5 text-sm outline-none"/>
+          <span class="px-3 py-2.5 bg-gray-50 text-sm text-gray-500 font-medium border-l border-gray-200">KB</span>
+        </div>
+        <p class="text-xs text-gray-400">
+          Binary-searches for the best quality that stays at or below your target.<br/>
+          PNG can't go lossy — if the target can't be hit it auto-switches to WEBP.
+        </p>
+      </div>
+
+      <!-- Output format -->
+      <div class="mt-5">
+        <p class="text-sm font-medium text-gray-700 mb-2">Output Format</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="fmt-btn active" data-fmt="original" onclick="selectFmt('original')">Same as input</button>
+          <button class="fmt-btn" data-fmt="JPEG"            onclick="selectFmt('JPEG')">JPEG</button>
+          <button class="fmt-btn" data-fmt="PNG"             onclick="selectFmt('PNG')">PNG</button>
+          <button class="fmt-btn" data-fmt="WEBP"            onclick="selectFmt('WEBP')">WEBP</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-100"></div>
+
+    <!-- ── Step 3: Compress button ── -->
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-violet-500 mb-4">Step 3 — Compress</p>
+      <button id="compress-btn" onclick="startCompress()" disabled
+        class="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed
+               text-white font-semibold px-8 py-3 rounded-xl transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+        </svg>
+        Compress Image
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress-wrap" class="hidden fade-in">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="spin"></div>
+        <span class="text-sm text-gray-500">Compressing…</span>
+      </div>
+      <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div class="prog-inner h-full w-full rounded-full"></div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-box" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-3 fade-in">
+      <p id="error-msg" class="text-sm text-red-700 font-medium"></p>
+    </div>
+
+    <!-- ── Result ── -->
+    <div id="result-box" class="hidden fade-in">
+
+      <div class="bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-2xl p-6">
+
+        <!-- Headline row -->
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900">Compression complete!</p>
+            <p id="r-headline" class="text-xs text-gray-500 mt-0.5"></p>
+          </div>
+          <span id="larger-badge"
+            class="hidden ml-auto bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full">
+            ⚠ File got bigger
+          </span>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="grid grid-cols-3 gap-4 mb-5 text-center">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Original</p>
+            <p id="r-orig" class="text-2xl font-extrabold text-gray-800 font-display"></p>
+            <p class="text-xs text-gray-400">KB</p>
+          </div>
+          <div class="flex flex-col items-center justify-center">
+            <svg class="w-5 h-5 text-violet-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+            <p id="r-pct" class="text-lg font-extrabold text-green-600 font-display"></p>
+            <p class="text-xs text-gray-400">saved</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Compressed</p>
+            <p id="r-comp" class="text-2xl font-extrabold text-violet-700 font-display"></p>
+            <p class="text-xs text-gray-400">KB</p>
+          </div>
+        </div>
+
+        <!-- Visual bar -->
+        <div class="relative h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+          <div id="bar-orig" class="absolute left-0 top-0 h-full bg-red-300 rounded-full" style="width:100%"></div>
+          <div id="bar-comp" class="absolute left-0 top-0 h-full bg-violet-500 rounded-full transition-all duration-700" style="width:50%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mb-4">
+          <span>Original</span><span>Compressed</span>
+        </div>
+
+        <p id="r-details" class="text-xs text-gray-500 mb-5"></p>
+
+        <!-- Buttons -->
+        <div class="flex flex-wrap gap-3 items-center">
+          <button id="dl-btn" onclick="triggerDownload()"
+            class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download
+          </button>
+          <button onclick="resetAll()" class="text-sm text-violet-700 underline hover:text-violet-900">
+            Compress another
+          </button>
+        </div>
+      </div>
+
+      <!-- Before / After -->
+      <div id="preview-section" class="mt-6 hidden">
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Before / After</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="text-center">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Original</p>
+            <img id="prev-orig" class="preview-img w-full" src="" alt="Original"/>
+            <p id="prev-orig-lbl" class="text-xs text-gray-400 mt-1"></p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs font-semibold text-violet-600 mb-2">Compressed</p>
+            <img id="prev-comp" class="preview-img w-full" src="" alt="Compressed"/>
+            <p id="prev-comp-lbl" class="text-xs text-violet-500 mt-1"></p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /result-box -->
+
+  </div><!-- /card -->
+
+  <!-- Back link -->
+  <div class="mt-6 text-center">
+    <a href="{% url 'image_converter:index' %}" class="text-sm text-gray-400 hover:text-gray-600 transition">
+      ← Back to Format Converter
+    </a>
+  </div>
+
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const CSRF = '{{ csrf_token }}';
+let selFile = null, selFmt = 'original', mode = 'quality';
+let compId = null, outName = null, previewUrl = null;
+
+/* ── Upload ── */
+const dz    = document.getElementById('drop-zone');
+const input = document.getElementById('img-input');
+
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', e => { if (!dz.contains(e.relatedTarget)) dz.classList.remove('dragover'); });
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); });
+input.addEventListener('change', () => { if (input.files[0]) pick(input.files[0]); });
+
+function pick(f) {
+  if (!f.type.startsWith('image/')) { showErr('Please upload a valid image.'); return; }
+  if (f.size > 20*1024*1024) { showErr('Max 20 MB allowed.'); return; }
+  selFile = f;
+  hideErr(); hideResult();
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('thumb-sm').src  = e.target.result;
+    document.getElementById('prev-orig').src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+
+  document.getElementById('up-name').textContent = f.name;
+  document.getElementById('up-meta').textContent = `${(f.size/1024).toFixed(0)} KB`;
+  document.getElementById('dz-placeholder').classList.add('hidden');
+  document.getElementById('dz-preview').classList.remove('hidden');
+  document.getElementById('dz-preview').classList.add('flex');
+  document.getElementById('compress-btn').disabled = false;
+}
+
+/* ── Mode ── */
+function setMode(m) {
+  mode = m;
+  document.getElementById('tab-quality').classList.toggle('active', m==='quality');
+  document.getElementById('tab-target').classList.toggle('active',  m==='target');
+  document.getElementById('panel-quality').classList.toggle('hidden', m!=='quality');
+  document.getElementById('panel-target').classList.toggle('hidden',  m!=='target');
+}
+
+/* ── Format ── */
+function selectFmt(f) {
+  selFmt = f;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.toggle('active', b.dataset.fmt===f));
+}
+
+/* ── Quality sync slider ↔ number input ── */
+function syncQ(v) {
+  const c = Math.max(1, Math.min(95, parseInt(v)||75));
+  document.getElementById('quality-sl').value = c;
+  document.getElementById('q-num').value      = c;
+  document.getElementById('q-display').textContent = c;
+}
+
+/* ── Compress ── */
+async function startCompress() {
+  if (!selFile) return;
+  showProg(); hideErr(); hideResult();
+
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF);
+  fd.append('image', selFile);
+  fd.append('mode', mode);
+  fd.append('output_format', selFmt);
+
+  if (mode === 'quality') {
+    fd.append('quality', document.getElementById('quality-sl').value);
+  } else {
+    const kb = document.getElementById('target-kb').value;
+    if (!kb || parseInt(kb) < 1) { hideProg(); showErr('Enter a valid target size in KB.'); return; }
+    fd.append('target_kb', kb);
+  }
+
+  try {
+    const res  = await fetch('{% url "image_converter:compress_run" %}', { method:'POST', body:fd });
+    const data = await res.json();
+    hideProg();
+    if (data.status === 'success') showResult(data);
+    else showErr(data.message || 'Compression failed.');
+  } catch { hideProg(); showErr('Network error. Please try again.'); }
+}
+
+/* ── Result ── */
+function showResult(d) {
+  compId      = d.compression_id;
+  outName     = d.out_filename;
+
+  document.getElementById('r-headline').textContent =
+    `${d.original_filename}  ·  Q${d.quality_used ?? '—'}  ·  ${d.output_format}`;
+  document.getElementById('r-orig').textContent = d.original_size_kb;
+  document.getElementById('r-comp').textContent = d.compressed_size_kb;
+  document.getElementById('r-pct').textContent  = d.larger ? '0%' : `${d.saving_pct}%`;
+  document.getElementById('r-details').textContent = d.larger
+    ? `⚠ Compressed file is ${d.compressed_size_kb - d.original_size_kb} KB larger — try a lower quality or different format.`
+    : `Saved ${d.saving_kb} KB  ·  Quality ${d.quality_used ?? '—'}/95  ·  Format: ${d.output_format}`;
+
+  const pct = Math.max(4, Math.min(100, (d.compressed_size_kb / d.original_size_kb) * 100));
+  document.getElementById('bar-comp').style.width = pct + '%';
+
+  document.getElementById('larger-badge').classList.toggle('hidden', !d.larger);
+  document.getElementById('result-box').classList.remove('hidden');
+
+  // Before/after preview — load compressed via URL if available, else skip
+  if (d.preview_url) {
+    document.getElementById('prev-comp').src = d.preview_url;
+    document.getElementById('prev-orig-lbl').textContent = `${d.original_size_kb} KB`;
+    document.getElementById('prev-comp-lbl').textContent = `${d.compressed_size_kb} KB · ${d.output_format}`;
+    document.getElementById('preview-section').classList.remove('hidden');
+  }
+}
+
+/* ── Download ── */
+async function triggerDownload() {
+  if (!compId) return;
+  const btn = document.getElementById('dl-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Downloading…';
+  try {
+    const url = `{% url "image_converter:compress_download" "00000000-0000-0000-0000-000000000000" %}`
+      .replace('00000000-0000-0000-0000-000000000000', compId);
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const obj  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = obj; a.download = outName;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(obj);
+  } catch { showErr('Download failed. Please try again.'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download';
+  }
+}
+
+/* ── Helpers ── */
+function showProg()  { document.getElementById('progress-wrap').classList.remove('hidden'); document.getElementById('compress-btn').disabled=true; }
+function hideProg()  { document.getElementById('progress-wrap').classList.add('hidden');    document.getElementById('compress-btn').disabled=false; }
+function showErr(m)  { document.getElementById('error-msg').textContent=m; document.getElementById('error-box').classList.remove('hidden'); }
+function hideErr()   { document.getElementById('error-box').classList.add('hidden'); }
+function hideResult(){ document.getElementById('result-box').classList.add('hidden'); document.getElementById('preview-section').classList.add('hidden'); }
+
+function resetAll() {
+  selFile=null; compId=null; outName=null; input.value='';
+  document.getElementById('dz-placeholder').classList.remove('hidden');
+  document.getElementById('dz-preview').classList.add('hidden');
+  document.getElementById('dz-preview').classList.remove('flex');
+  document.getElementById('compress-btn').disabled = true;
+  hideErr(); hideResult();
+}
+</script>
+{% endblock %}
