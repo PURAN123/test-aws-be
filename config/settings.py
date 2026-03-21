@@ -160,7 +160,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 AWS_STORAGE_BUCKET_NAME = "saas-project-v3"
-AWS_S3_REGION_NAME = "eu-north-1"
+AWS_S3_REGION_NAME = "us-east-1"
 AWS_DEFAULT_ACL =None
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_S3_FILE_OVERWRITE = False
